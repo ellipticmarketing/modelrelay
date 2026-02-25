@@ -953,6 +953,10 @@
         <h1 class="dashboard-heading">Dashboard</h1>
         <p class="dashboard-subtitle">Live model telemetry, provider health, and routing controls in one place.
         </p>
+        <p style="margin: 8px 0 0; color: var(--text-muted); font-size: 0.78rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span>Version <span id="dashboard-version">Loading...</span></span>
+          <span id="update-pill" style="display:none; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; border-radius:999px; padding:2px 9px; font-size:0.68rem; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;">Update Available</span>
+        </p>
       </div>
     </div>
 
@@ -1263,6 +1267,7 @@
     let currentRenderedOrder = [];
     let activePinnedModelId = null; // tracks the currently pinned model server-side
     let isTableHovered = false;
+    let metaLoaded = false;
 
 
 
@@ -1284,6 +1289,9 @@
 
     async function fetchData() {
       try {
+        if (!metaLoaded) {
+          loadMeta();
+        }
         const res = await fetch('/api/models');
         const data = await res.json();
 
@@ -1362,6 +1370,36 @@
         }
       } catch (e) {
         console.error('Fetch error:', e);
+      }
+    }
+
+    async function loadMeta() {
+      try {
+        const res = await fetch('/api/meta');
+        if (!res.ok) throw new Error('meta fetch failed');
+        const meta = await res.json();
+        if (!meta || !meta.version || meta.version === 'unknown') throw new Error('meta missing version');
+        const versionEl = document.getElementById('dashboard-version');
+        const pillEl = document.getElementById('update-pill');
+        versionEl.textContent = `v${meta.version}`;
+
+        if (pillEl) {
+          if (meta.updateAvailable && meta.latestVersion) {
+            pillEl.textContent = `Update Available: v${meta.latestVersion}`;
+            pillEl.style.display = 'inline-flex';
+            pillEl.title = `Current: v${meta.version}`;
+          } else {
+            pillEl.style.display = 'none';
+          }
+        }
+
+        metaLoaded = true;
+      } catch {
+        const target = document.getElementById('dashboard-version');
+        target.textContent = 'Loading...';
+        setTimeout(() => {
+          if (!metaLoaded) loadMeta();
+        }, 5000);
       }
     }
 
