@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process'
 import { loadConfig } from '../lib/config.js'
 import { runOnboard } from '../lib/onboard.js'
 import { getAutostartStatus, installAutostart, startAutostart, stopAutostart, uninstallAutostart } from '../lib/autostart.js'
+import { getPreferredLanIpv4Address } from '../lib/network.js'
 
 function printHelp() {
   console.log('modelrelay')
@@ -137,6 +138,10 @@ async function main() {
     if (result.ok) {
       console.log(result.message)
       if (result.path) console.log(`Path: ${result.path}`)
+      if (cliArgs.autostartAction === 'install') {
+        const lanIp = getPreferredLanIpv4Address()
+        if (lanIp) console.log(`Visit http://${lanIp}:7352 to access the Web UI from another computer on your network.`)
+      }
       return
     }
 
