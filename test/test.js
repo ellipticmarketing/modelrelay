@@ -15,6 +15,7 @@ import {
   parseOpenRouterKeyRateLimit,
   VERDICT_ORDER,
 } from '../lib/utils.js'
+import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -302,6 +303,25 @@ describe('parseOpenRouterKeyRateLimit', () => {
   it('returns null for invalid payloads', () => {
     assert.equal(parseOpenRouterKeyRateLimit(null), null)
     assert.equal(parseOpenRouterKeyRateLimit({ data: {} }), null)
+  })
+})
+
+describe('autostart', () => {
+  it('resolves absolute executable path when available', () => {
+    const binPath = join(ROOT, 'bin', 'modelrelay.js')
+    assert.equal(resolveAutostartExecPath(binPath), binPath)
+  })
+
+  it('falls back to command name when path is missing', () => {
+    assert.equal(resolveAutostartExecPath('/definitely/not/a/file/modelrelay'), 'modelrelay')
+  })
+
+  it('resolves node executable path when available', () => {
+    assert.equal(resolveAutostartNodePath(process.execPath), process.execPath)
+  })
+
+  it('falls back to node command when node path is missing', () => {
+    assert.equal(resolveAutostartNodePath('/definitely/not/a/file/node'), 'node')
   })
 })
 
