@@ -332,6 +332,7 @@ describe('onboard integrations', () => {
 
     assert.equal(provider.baseUrl, 'http://127.0.0.1:7352/v1')
     assert.equal(provider.api, 'openai-completions')
+    assert.equal(provider.apiKey, 'no-key')
     assert.deepEqual(provider.models, [{ id: 'auto-fastest', name: 'Auto Fastest' }])
   })
 })

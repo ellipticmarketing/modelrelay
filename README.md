@@ -65,6 +65,7 @@ If you want manual setup, merge this into `~/.openclaw/openclaw.json`:
       "modelrelay": {
         "baseUrl": "http://127.0.0.1:7352/v1",
         "api": "openai-completions",
+        "apiKey": "no-key",
         "models": [
           { "id": "auto-fastest", "name": "Auto Fastest" }
         ]
