@@ -2026,11 +2026,23 @@
           if (!a.hasKey && b.hasKey) return 1;
           return a.name.localeCompare(b.name);
         }).forEach(p => {
+          const providerModels = allModels ? allModels.filter(m => m.providerKey === p.key) : [];
           // Count models for this provider from allModels
-          const modelCount = allModels ? allModels.filter(m => m.providerKey === p.key).length : 0;
+          const modelCount = providerModels.length;
           // Get rate limit info from a model with this provider that has rateLimit data
-          const rlModel = allModels ? allModels.find(m => m.providerKey === p.key && m.rateLimit) : null;
+          const rlModel = providerModels.find(m => m.rateLimit) || null;
           const rl = rlModel?.rateLimit;
+          const errorModel = providerModels
+            .filter(m => m.lastError && m.status !== 'up')
+            .sort((a, b) => {
+              const aTs = Date.parse(a.lastError.updatedAt || '');
+              const bTs = Date.parse(b.lastError.updatedAt || '');
+              if (Number.isNaN(aTs) && Number.isNaN(bTs)) return 0;
+              if (Number.isNaN(aTs)) return 1;
+              if (Number.isNaN(bTs)) return -1;
+              return bTs - aTs;
+            })[0] || null;
+          const providerError = errorModel ? errorModel.lastError : null;
 
           const statusIcon = p.hasKey ? '✅' : '⚠️';
           const statusColor = p.hasKey ? '#065f46' : '#92400e';
@@ -2061,6 +2073,20 @@
               </div>`;
           }
 
+          let providerErrorHtml = '';
+          if (providerError && providerError.message) {
+            const errorUpdated = providerError.updatedAt ? new Date(providerError.updatedAt) : null;
+            const errorWhen = errorUpdated && !Number.isNaN(errorUpdated.getTime())
+              ? errorUpdated.toLocaleString()
+              : 'unknown time';
+            providerErrorHtml = `
+              <div style="margin-top:12px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:0.78rem; color:#7f1d1d;">
+                <div style="font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; font-size:0.7rem; color:#991b1b;">Latest Provider Error</div>
+                <div style="word-break:break-word;"><b>${escapeHtml(errorModel.modelId)}</b>: ${escapeHtml(providerError.message)}</div>
+                <div style="margin-top:6px; color:#b91c1c;">HTTP ${escapeHtml(providerError.code || '?')} • ${escapeHtml(errorWhen)}</div>
+              </div>`;
+          }
+
           const section = document.createElement('div');
           section.className = 'provider-section';
           section.innerHTML = `
@@ -2082,6 +2108,7 @@
               <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (Key Configured)' : 'Enter API Key...'}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
               <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:white; cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
             </div>
+            ${providerErrorHtml}
             ${rateLimitHtml}
           `;
           container.appendChild(section);
