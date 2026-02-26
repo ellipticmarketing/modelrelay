@@ -113,6 +113,17 @@ describe('getAvg', () => {
     })
     assert.equal(getAvg(result, 10_000), 100)
   })
+
+  it('keeps successful pings within the default long window', () => {
+    const now = Date.now()
+    const result = mockResult({
+      pings: [
+        { ms: 240, code: '200', ts: now - 20 * 60_000 },
+        { ms: 900, code: '200', ts: now - 40 * 60_000 },
+      ],
+    })
+    assert.equal(getAvg(result), 240)
+  })
 })
 
 describe('getVerdict', () => {
