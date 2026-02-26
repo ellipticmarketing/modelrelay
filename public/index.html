@@ -1300,6 +1300,7 @@
     let isTableHovered = false;
     let metaLoaded = false;
     let logsViewMode = 'history';
+    const PROVIDER_ERROR_MAX_AGE_MS = 120 * 60_000;
 
 
 
@@ -2026,6 +2027,7 @@
           if (!a.hasKey && b.hasKey) return 1;
           return a.name.localeCompare(b.name);
         }).forEach(p => {
+          const now = Date.now();
           const providerModels = allModels ? allModels.filter(m => m.providerKey === p.key) : [];
           // Count models for this provider from allModels
           const modelCount = providerModels.length;
@@ -2033,7 +2035,11 @@
           const rlModel = providerModels.find(m => m.rateLimit) || null;
           const rl = rlModel?.rateLimit;
           const errorModel = providerModels
-            .filter(m => m.lastError && m.status !== 'up')
+            .filter(m => {
+              if (!m.lastError || m.status === 'up') return false;
+              const updatedAtMs = Date.parse(m.lastError.updatedAt || '');
+              return !Number.isNaN(updatedAtMs) && (now - updatedAtMs) <= PROVIDER_ERROR_MAX_AGE_MS;
+            })
             .sort((a, b) => {
               const aTs = Date.parse(a.lastError.updatedAt || '');
               const bTs = Date.parse(b.lastError.updatedAt || '');
