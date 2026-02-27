@@ -1141,10 +1141,8 @@
                   id="arrow-model">↕</i></th>
               <th class="sortable" width="80" onclick="setSort('qos')" id="th-qos">QoS <i class="sort-arrow"
                   id="arrow-qos">↕</i></th>
-              <th class="sortable" width="80" onclick="setSort('intell')" id="th-intell">Intell. <i class="sort-arrow"
+              <th class="sortable" width="80" onclick="setSort('intell')" id="th-intell">SWE% <i class="sort-arrow"
                   id="arrow-intell">↕</i></th>
-              <th class="sortable" width="80" onclick="setSort('coding')" id="th-coding">Coding <i class="sort-arrow"
-                  id="arrow-coding">↕</i></th>
               <th class="sortable text-right" width="120" onclick="setSort('ping')" id="th-ping">Ping <i
                   class="sort-arrow" id="arrow-ping">↕</i></th>
               <th class="sortable text-right" width="150" onclick="setSort('availability')" id="th-availability">
@@ -1689,7 +1687,7 @@
     }
 
     function updateSortHeaders() {
-      const cols = ['model', 'qos', 'intell', 'coding', 'ping', 'availability', 'status'];
+      const cols = ['model', 'qos', 'intell', 'ping', 'availability', 'status'];
       const resetBtn = document.getElementById('sort-reset-btn');
       cols.forEach(col => {
         const th = document.getElementById(`th-${col}`);
@@ -1712,8 +1710,7 @@
         case 'ping': return (m.avg === Infinity || m.avg === null) ? Infinity : m.avg;
         case 'availability': return m.uptime;
         case 'qos': return m.qos || 0;
-        case 'intell': return m.intell || 0;
-        case 'coding': return m.coding || 0;
+        case 'intell': return getBenchmarkSortValue(m.intell);
         case 'rate': return m.isRateLimited ? 1 : 0;
         case 'health': return m.qos || 0; // fallback just in case
         case 'model': return (m.label || '').toLowerCase();
@@ -1726,7 +1723,6 @@
     const DEFAULT_SORT_CHAIN = [
       { col: 'status', dir: 1 },  // up (0) before down (1)
       { col: 'qos', dir: -1 },    // Highest QoS first
-      { col: 'coding', dir: -1 },   // fallback tiebreaker
       { col: 'ping', dir: 1 },    // fallback tiebreaker
       { col: 'availability', dir: -1 }, // fallback tiebreaker
       { col: 'model', dir: 1 },   // alphabetical
@@ -1876,14 +1872,10 @@
 
         // Update Intell
         const intellCell = row.cells[3];
-        intellCell.innerHTML = `<div style="font-weight: 600;">${m.intell || '—'}</div>`;
-
-        // Update Coding
-        const codingCell = row.cells[4];
-        codingCell.innerHTML = `<div style="font-weight: 600;">${m.coding || '—'}</div>`;
+        intellCell.innerHTML = `<div style="font-weight: 600;">${getBenchmarkTableDisplayValue(m.intell)}</div>`;
 
         // Update status dot and text
-        const statusCell = row.cells[7];
+        const statusCell = row.cells[6];
         statusCell.innerHTML = `
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="width: 6px; height: 6px; border-radius: 50%; background: ${m.status === 'up' ? 'var(--success)' : (m.status === 'disabled' || m.status === 'banned') ? 'var(--text-muted)' : 'var(--error)'}"></span>
@@ -1892,7 +1884,7 @@
           `;
 
         // Update ping
-        const pingCell = row.cells[5];
+        const pingCell = row.cells[4];
         const pingDot = pingCell.querySelector('.ping-dot');
         const pingTextEl = pingCell.querySelector('div[style*="text-align"]') || pingCell.querySelector('div:last-child');
         if (hasPing) {
@@ -1907,7 +1899,7 @@
         }
 
         // Update uptime and rate icon
-        const uptimeCell = row.cells[6];
+        const uptimeCell = row.cells[5];
         const uptimeContainer = uptimeCell.querySelector('div');
         uptimeContainer.style.justifyContent = 'flex-end';
         uptimeContainer.querySelector('.progress-fill').style.width = m.uptime + '%';
@@ -1946,8 +1938,7 @@
           <td>
             <div style="font-weight: 700; color: ${getQosColor(m.qos)}">${getQosDisplayValue(m.qos)}</div>
           </td>
-          <td><div style="font-weight: 600;">${m.intell || '—'}</div></td>
-          <td><div style="font-weight: 600;">${m.coding || '—'}</div></td>
+          <td><div style="font-weight: 600;">${getBenchmarkTableDisplayValue(m.intell)}</div></td>
           <td class="text-right">
             <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end;">
               <div class="ping-dot ${hasPing ? 'active ' + pingClass : ''}" style="--speed: ${pingSpeed}"></div>
@@ -2004,6 +1995,24 @@
       if (n >= 40) return '#4ade80';
       if (n >= 20) return 'var(--warning)';
       return 'var(--error)';
+    }
+
+    function getBenchmarkSortValue(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return 0;
+      return n;
+    }
+
+    function getBenchmarkDisplayValue(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return '—';
+      return Number(n.toFixed(1));
+    }
+
+    function getBenchmarkTableDisplayValue(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return '—';
+      return Math.round(n * 100);
     }
 
     async function loadSettings() {
@@ -2662,10 +2671,11 @@
         <div id="drawer-ping-status" style="margin: -8px 0 16px; font-size: 0.75rem; color: var(--text-muted);"></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
           <div style="background: #faf9f8; padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Coding Index</div>
-            <div style="font-weight: 700;">${m.coding || 'N/A'}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">SWE-bench</div>
+            <div style="font-weight: 700;">${getBenchmarkDisplayValue(m.intell)}</div>
           </div>
-          <div style="background: #faf9f8; padding: 16px; border-radius: 12px; border: 1px solid var(--boer)         <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Context</div>
+          <div style="background: #faf9f8; padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Context</div>
             <div style="font-weight: 700;">${m.ctx || 'N/A'}</div>
           </div>
         </div>

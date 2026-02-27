@@ -33,8 +33,6 @@ function mockResult(overrides = {}) {
     label: 'Test Model',
     providerKey: 'nvidia',
     intell: 10,
-    coding: 10,
-    termbench: 0.1,
     ctx: '128k',
     status: 'up',
     pings: [],
@@ -60,24 +58,24 @@ describe('sources data integrity', () => {
     }
   })
 
-  it('provider model tuples have 6 fields', () => {
+  it('provider model tuples have 4 fields', () => {
     for (const provider of Object.values(sources)) {
       for (const model of provider.models) {
         assert.ok(Array.isArray(model))
-        assert.equal(model.length, 6)
+        assert.equal(model.length, 4)
         assert.equal(typeof model[0], 'string')
         assert.equal(typeof model[1], 'string')
       }
     }
   })
 
-  it('flat MODELS tuples have 7 fields', () => {
+  it('flat MODELS tuples have 5 fields', () => {
     for (const model of MODELS) {
       assert.ok(Array.isArray(model))
-      assert.equal(model.length, 7)
+      assert.equal(model.length, 5)
       assert.equal(typeof model[0], 'string')
       assert.equal(typeof model[1], 'string')
-      assert.equal(typeof model[6], 'string')
+      assert.equal(typeof model[4], 'string')
     }
   })
 
@@ -88,7 +86,7 @@ describe('sources data integrity', () => {
 
   it('has no duplicate provider/model IDs', () => {
     const seen = new Set()
-    for (const [modelId, , , , , , providerKey] of MODELS) {
+    for (const [modelId, , , , providerKey] of MODELS) {
       const key = `${providerKey}/${modelId}`
       assert.equal(seen.has(key), false, `Duplicate model key found: ${key}`)
       seen.add(key)
