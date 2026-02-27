@@ -663,8 +663,8 @@ export const sources = {
       [
         "coder-model",
         "Qwen Coder (OAuth)",
-        0,
-        0,
+        28,
+        23,
         0,
         "256k"
       ],
@@ -1407,8 +1407,8 @@ export const MODELS = [
   [
     "coder-model",
     "Qwen Coder (OAuth)",
-    0,
-    0,
+    28,
+    23,
     0,
     "256k",
     "qwencode"

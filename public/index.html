@@ -1358,25 +1358,7 @@
             }
           }
 
-          const aaScore = ((m.coding || 0) * 2) + (m.intell || 0) + ((m.termbench || 0) * 100);
-          const avgPing = (m.avg === Infinity || m.avg === null) ? 1000 : m.avg;
-          const lastPingMs = (m.lastPing == null || m.lastPing === 'TIMEOUT') ? avgPing : m.lastPing;
-          // Blend avg (70%) + last ping (30%) so recent spikes are reflected
-          const effectivePing = Math.round(avgPing * 0.7 + lastPingMs * 0.3);
-          const pingScore = Math.max(0, 1000 - effectivePing) / 10;
-          const baseScore = aaScore + pingScore;
-
-          let availabilityMultiplier;
-          if (m.uptime >= 95) availabilityMultiplier = 1.0;
-          else if (m.uptime >= 85) availabilityMultiplier = 0.9;
-          else if (m.uptime >= 70) availabilityMultiplier = 0.6;
-          else availabilityMultiplier = 0.2;
-
-          let qos = Math.round(baseScore * availabilityMultiplier);
-          if (m.status !== 'up') qos = 0;
-          if (isRateLimited) qos = 0;
-
-          return { ...m, qos, isRateLimited };
+          return { ...m, qos: m.qos || 0, isRateLimited };
         });
 
         // Populate Provider Checkboxes
@@ -1442,15 +1424,7 @@
       const candidates = models.filter(m => m.status === 'up' && m.avg !== Infinity);
       if (candidates.length === 0) return null;
 
-      const scored = candidates.map(m => {
-        const aaScore = ((m.coding || 0) * 2) + (m.intell || 0) + ((m.termbench || 0) * 100);
-        const availWeight = m.uptime;
-        const pingWeight = Math.max(0, 1000 - m.avg) / 10;
-        const score = aaScore + (availWeight * 0.3) + (pingWeight * 0.2);
-        return { ...m, score };
-      });
-
-      return scored.sort((a, b) => b.score - a.score)[0];
+      return [...candidates].sort((a, b) => (b.qos || 0) - (a.qos || 0))[0];
     }
 
     function updateKPIs(models, bestModelId, pinnedModelId) {
@@ -1898,7 +1872,7 @@
 
         // Update QoS
         const qosCell = row.cells[2];
-        qosCell.innerHTML = `<div style="font-weight: 700; color: ${m.qos >= 80 ? 'var(--success)' : (m.qos >= 50 ? 'var(--warning)' : 'var(--error)')}">${m.qos || 0}</div>`;
+        qosCell.innerHTML = `<div style="font-weight: 700; color: ${getQosColor(m.qos)}">${getQosDisplayValue(m.qos)}</div>`;
 
         // Update Intell
         const intellCell = row.cells[3];
@@ -1970,7 +1944,7 @@
             <div style="font-size: 0.75rem; color: var(--text-muted);">${m.providerKey}</div>
           </td>
           <td>
-            <div style="font-weight: 700; color: ${m.qos >= 80 ? 'var(--success)' : (m.qos >= 50 ? 'var(--warning)' : 'var(--error)')}">${m.qos || 0}</div>
+            <div style="font-weight: 700; color: ${getQosColor(m.qos)}">${getQosDisplayValue(m.qos)}</div>
           </td>
           <td><div style="font-weight: 600;">${m.intell || '—'}</div></td>
           <td><div style="font-weight: 600;">${m.coding || '—'}</div></td>
@@ -2015,6 +1989,21 @@
       if (ms < 400) return '3.5s';
       if (ms < 1200) return '2.5s';
       return '1.8s';
+    }
+
+    function getQosDisplayValue(qos) {
+      const n = Number(qos);
+      if (!Number.isFinite(n)) return 0;
+      return Math.round(n);
+    }
+
+    function getQosColor(qos) {
+      const n = Number(qos);
+      if (!Number.isFinite(n)) return 'var(--error)';
+      if (n >= 45) return '#16a34a';
+      if (n >= 40) return '#4ade80';
+      if (n >= 20) return 'var(--warning)';
+      return 'var(--error)';
     }
 
     async function loadSettings() {
