@@ -466,6 +466,22 @@ describe('parseArgs', () => {
     assert.equal(result.command, 'update')
     assert.equal(result.autostartAction, null)
   })
+
+  it('parses autoupdate status by default', () => {
+    const result = parseArgs(argv('autoupdate'))
+    assert.equal(result.command, 'autoupdate')
+    assert.equal(result.autoUpdateAction, 'status')
+  })
+
+  it('parses autoupdate enable/disable with interval', () => {
+    const enabled = parseArgs(argv('autoupdate', '--enable', '--interval', '12'))
+    assert.equal(enabled.autoUpdateAction, 'enable')
+    assert.equal(enabled.autoUpdateIntervalHours, 12)
+
+    const disabled = parseArgs(argv('autoupdate', '--disable'))
+    assert.equal(disabled.autoUpdateAction, 'disable')
+    assert.equal(disabled.autoUpdateIntervalHours, null)
+  })
 })
 
 describe('parseOpenRouterKeyRateLimit', () => {

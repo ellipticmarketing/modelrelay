@@ -95,6 +95,7 @@ modelrelay start --autostart
 modelrelay uninstall --autostart
 modelrelay status --autostart
 modelrelay update
+modelrelay autoupdate [--enable|--disable|--status] [--interval <hours>]
 modelrelay autostart [--install|--start|--uninstall|--status]
 ```
 
@@ -105,6 +106,10 @@ Request terminal logging is disabled by default. Use `--log` to enable it.
 During `modelrelay onboard`, you will also be prompted to enable auto-start on login.
 
 `modelrelay update` upgrades the global npm package and, when autostart is configured, stops the background service first and starts it again after the update.
+
+Auto-update is enabled by default. While the router is running, modelrelay checks npm periodically (default: every 24 hours) and applies updates automatically.
+
+Use `modelrelay autoupdate --status` to inspect state, `modelrelay autoupdate --disable` to turn it off, and `modelrelay autoupdate --enable --interval 12` to re-enable with a custom interval.
 
 ## Config
 

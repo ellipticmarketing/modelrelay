@@ -807,6 +807,165 @@
       border-color: var(--accent);
     }
 
+    .autoupdate-panel {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      background: linear-gradient(135deg, #ffffff 0%, #fbfaf8 100%);
+      box-shadow: 0 8px 22px rgba(26, 25, 24, 0.06);
+      overflow: hidden;
+    }
+
+    .autoupdate-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto -35% -60% auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(140, 137, 133, 0.16), rgba(140, 137, 133, 0));
+      pointer-events: none;
+    }
+
+    .autoupdate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .autoupdate-title {
+      margin: 0;
+      font-size: 1.02rem;
+      letter-spacing: -0.01em;
+    }
+
+    .autoupdate-subtitle {
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      max-width: 62ch;
+      line-height: 1.45;
+    }
+
+    .autoupdate-status-pill {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .autoupdate-status-pill.on {
+      color: #065f46;
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .autoupdate-status-pill.off {
+      color: #334155;
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .autoupdate-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .autoupdate-toggle-label,
+    .autoupdate-interval-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.84rem;
+    }
+
+    .autoupdate-toggle-label {
+      cursor: pointer;
+    }
+
+    .autoupdate-interval-label input {
+      width: 92px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: var(--text);
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    .autoupdate-interval-label input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .autoupdate-save-status {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      min-height: 1em;
+    }
+
+    .autoupdate-save-status.success {
+      color: #047857;
+    }
+
+    .autoupdate-save-status.error {
+      color: #b91c1c;
+    }
+
+    .autoupdate-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .autoupdate-stat {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      min-height: 54px;
+    }
+
+    .autoupdate-stat-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .autoupdate-stat-value {
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.35;
+      word-break: break-word;
+      font-weight: 600;
+    }
+
+    .autoupdate-stat-value.error {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
     /* Drawer/Slide-over */
     #drawer {
       position: fixed;
@@ -1029,7 +1188,7 @@
     <div class="tabs">
       <div class="tab active" id="tab-models" onclick="switchTab('models')">Live Telemetry</div>
       <div class="tab" id="tab-logs" onclick="switchTab('logs')">Request Logs</div>
-      <div class="tab" id="tab-settings" onclick="switchTab('settings')">Providers</div>
+      <div class="tab" id="tab-settings" onclick="switchTab('settings')">Settings</div>
       <div class="tab" id="tab-setup" onclick="switchTab('setup')">Setup Instructions</div>
     </div>
 
@@ -1159,9 +1318,13 @@
     </div>
 
     <div id="settings-view" style="display: none;">
-      <h2 style="margin-top: 0; font-size: 1.25rem;">Providers</h2>
-      <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.875rem;">Configure API keys to enable models
-        from different providers.</p>
+      <h2 style="margin-top: 0; font-size: 1.25rem;">Settings</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.875rem;">Manage router update behavior and provider credentials.</p>
+      <div id="autoupdate-container" class="provider-section">
+        <!-- Auto-update settings generated here -->
+      </div>
+      <h3 style="margin: 0 0 0.25rem; font-size: 1rem;">Providers</h3>
+      <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Configure API keys to enable models from different providers.</p>
       <div id="providers-container">
         <!-- Settings generated here -->
       </div>
@@ -1397,6 +1560,11 @@
         const versionEl = document.getElementById('dashboard-version');
         const pillEl = document.getElementById('update-pill');
         versionEl.textContent = `v${meta.version}`;
+        if (meta.autoUpdate) {
+          const interval = Number(meta.autoUpdate.intervalHours) > 0 ? Number(meta.autoUpdate.intervalHours) : 24;
+          const state = meta.autoUpdate.enabled === false ? 'off' : 'on';
+          versionEl.title = `Auto-update: ${state} (${interval}h)`;
+        }
 
         if (pillEl) {
           if (meta.updateAvailable && meta.latestVersion) {
@@ -2015,10 +2183,162 @@
       return Math.round(n * 100);
     }
 
+    function formatIsoDateTime(value) {
+      if (!value) return 'Never';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return 'Never';
+      return d.toLocaleString();
+    }
+
+    function setAutoUpdateSaveStatus(message, tone = 'muted') {
+      const statusEl = document.getElementById('autoupdate-save-status');
+      if (!statusEl) return;
+      statusEl.className = `autoupdate-save-status${tone === 'success' ? ' success' : tone === 'error' ? ' error' : ''}`;
+      statusEl.textContent = message || '';
+    }
+
+    function applyAutoUpdateState(state) {
+      if (!state) return;
+      const enabled = state.enabled !== false;
+      const stateText = enabled ? 'On' : 'Off';
+
+      const stateEl = document.getElementById('autoupdate-state');
+      if (stateEl) stateEl.textContent = stateText;
+
+      const pillEl = document.getElementById('autoupdate-pill');
+      if (pillEl) {
+        pillEl.textContent = stateText;
+        pillEl.classList.remove('on', 'off');
+        pillEl.classList.add(enabled ? 'on' : 'off');
+      }
+
+      const enabledInput = document.getElementById('autoupdate-enabled');
+      if (enabledInput) enabledInput.checked = enabled;
+
+      const intervalInput = document.getElementById('autoupdate-interval');
+      if (intervalInput && Number.isFinite(Number(state.intervalHours)) && Number(state.intervalHours) > 0) {
+        intervalInput.value = String(Number(state.intervalHours));
+      }
+
+      const lastCheckEl = document.getElementById('autoupdate-last-check');
+      if (lastCheckEl) lastCheckEl.textContent = formatIsoDateTime(state.lastCheckAt);
+
+      const lastUpdateEl = document.getElementById('autoupdate-last-update');
+      if (lastUpdateEl) lastUpdateEl.textContent = formatIsoDateTime(state.lastUpdateAt);
+
+      const lastVersionEl = document.getElementById('autoupdate-last-version');
+      if (lastVersionEl) lastVersionEl.textContent = state.lastVersionApplied || 'None';
+
+      const lastErrorEl = document.getElementById('autoupdate-last-error');
+      if (lastErrorEl) {
+        const msg = state.lastError || 'None';
+        lastErrorEl.textContent = msg;
+        lastErrorEl.classList.toggle('error', !!state.lastError);
+      }
+    }
+
+    async function saveAutoUpdateSettings() {
+      const enabledEl = document.getElementById('autoupdate-enabled');
+      const intervalEl = document.getElementById('autoupdate-interval');
+      if (!enabledEl || !intervalEl) return;
+
+      const intervalHours = Number(intervalEl.value);
+      if (!Number.isFinite(intervalHours) || intervalHours <= 0) {
+        setAutoUpdateSaveStatus('Interval must be a positive number of hours.', 'error');
+        return;
+      }
+
+      setAutoUpdateSaveStatus('Saving...');
+
+      try {
+        const res = await fetch('/api/autoupdate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: enabledEl.checked, intervalHours })
+        });
+
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error || 'Failed to save auto-update settings.');
+        }
+
+        const payload = await res.json();
+        const state = payload.autoUpdate || null;
+        if (state) applyAutoUpdateState(state);
+        setAutoUpdateSaveStatus('Saved.', 'success');
+      } catch (err) {
+        setAutoUpdateSaveStatus(err.message || 'Failed to save auto-update settings.', 'error');
+      }
+    }
+
+    function renderAutoUpdateSettings(autoUpdate) {
+      const container = document.getElementById('autoupdate-container');
+      if (!container || !autoUpdate) return;
+
+      const enabled = autoUpdate.enabled !== false;
+      const interval = Number(autoUpdate.intervalHours) > 0 ? Number(autoUpdate.intervalHours) : 24;
+      const stateText = enabled ? 'On' : 'Off';
+
+      container.innerHTML = `
+        <div class="autoupdate-panel">
+          <div class="autoupdate-header">
+            <div>
+              <h3 class="autoupdate-title">Auto-Update</h3>
+              <div class="autoupdate-subtitle">Keep modelrelay fresh automatically with periodic npm checks and safe background restarts.</div>
+            </div>
+            <span id="autoupdate-pill" class="autoupdate-status-pill ${enabled ? 'on' : 'off'}">${stateText}</span>
+          </div>
+
+          <div class="autoupdate-controls">
+            <label class="autoupdate-toggle-label">
+            <input type="checkbox" id="autoupdate-enabled" ${enabled ? 'checked' : ''}>
+            Enable auto-update
+            </label>
+
+            <label class="autoupdate-interval-label">
+              Interval (hours)
+              <input id="autoupdate-interval" type="number" min="1" step="1" value="${interval}">
+            </label>
+
+            <button class="btn" onclick="saveAutoUpdateSettings()">Save Changes</button>
+            <span id="autoupdate-save-status" class="autoupdate-save-status"></span>
+          </div>
+
+          <div class="autoupdate-stats-grid">
+            <div class="autoupdate-stat">
+              <div class="autoupdate-stat-label">State</div>
+              <div id="autoupdate-state" class="autoupdate-stat-value">${stateText}</div>
+            </div>
+            <div class="autoupdate-stat">
+              <div class="autoupdate-stat-label">Last Check</div>
+              <div id="autoupdate-last-check" class="autoupdate-stat-value">${formatIsoDateTime(autoUpdate.lastCheckAt)}</div>
+            </div>
+            <div class="autoupdate-stat">
+              <div class="autoupdate-stat-label">Last Update</div>
+              <div id="autoupdate-last-update" class="autoupdate-stat-value">${formatIsoDateTime(autoUpdate.lastUpdateAt)}</div>
+            </div>
+            <div class="autoupdate-stat">
+              <div class="autoupdate-stat-label">Last Version</div>
+              <div id="autoupdate-last-version" class="autoupdate-stat-value">${autoUpdate.lastVersionApplied || 'None'}</div>
+            </div>
+            <div class="autoupdate-stat" style="grid-column:1 / -1;">
+              <div class="autoupdate-stat-label">Last Error</div>
+              <div id="autoupdate-last-error" class="autoupdate-stat-value${autoUpdate.lastError ? ' error' : ''}">${escapeHtml(autoUpdate.lastError || 'None')}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     async function loadSettings() {
       try {
-        const res = await fetch('/api/config');
-        const providers = await res.json();
+        const [providersRes, autoUpdateRes] = await Promise.all([
+          fetch('/api/config'),
+          fetch('/api/autoupdate'),
+        ]);
+        const providers = await providersRes.json();
+        const autoUpdate = await autoUpdateRes.json();
+        renderAutoUpdateSettings(autoUpdate);
         const container = document.getElementById('providers-container');
         container.innerHTML = '';
 
