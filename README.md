@@ -118,4 +118,9 @@ During `modelrelay onboard`, you will also be prompted to enable auto-start on l
   - `CODESTRAL_API_KEY`
   - `HYPERBOLIC_API_KEY`
   - `SCALEWAY_API_KEY`
+  - `QWEN_CODE_API_KEY` (or `DASHSCOPE_API_KEY`)
   - `GOOGLE_API_KEY`
+
+For `Qwen Code`, modelrelay supports both API keys and Qwen OAuth cached credentials (`~/.qwen/oauth_creds.json`).
+If OAuth credentials exist, modelrelay will use them and refresh access tokens automatically.
+You can also start OAuth directly from the Web UI Providers tab using `Login with Qwen Code`.

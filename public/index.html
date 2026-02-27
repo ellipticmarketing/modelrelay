@@ -1301,6 +1301,8 @@
     let metaLoaded = false;
     let logsViewMode = 'history';
     const PROVIDER_ERROR_MAX_AGE_MS = 120 * 60_000;
+    let qwenOauthSessionId = null;
+    let qwenOauthPollTimer = null;
 
 
 
@@ -2093,6 +2095,13 @@
               </div>`;
           }
 
+          const qwenAuthActionsHtml = p.key === 'qwencode' ? `
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <button onclick="startQwenOAuthLogin()" style="border:1px solid var(--border); background:#fff; cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Login with Qwen Code</button>
+              <span id="qwencode-login-status" style="font-size:0.75rem; color:var(--text-muted);"></span>
+            </div>
+          ` : '';
+
           const section = document.createElement('div');
           section.className = 'provider-section';
           section.innerHTML = `
@@ -2114,6 +2123,7 @@
               <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (Key Configured)' : 'Enter API Key...'}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
               <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:white; cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
             </div>
+            ${qwenAuthActionsHtml}
             ${providerErrorHtml}
             ${rateLimitHtml}
           `;
@@ -2142,6 +2152,87 @@
       });
       input.value = '';
       loadSettings();
+    }
+
+    function setQwenLoginStatus(message, isError = false) {
+      const statusEl = document.getElementById('qwencode-login-status');
+      if (!statusEl) return;
+      statusEl.style.color = isError ? 'var(--error)' : 'var(--text-muted)';
+      statusEl.textContent = message || '';
+    }
+
+    async function pollQwenOAuthLoginStatus() {
+      if (!qwenOauthSessionId) return;
+      try {
+        const res = await fetch(`/api/qwencode/login/status?sessionId=${encodeURIComponent(qwenOauthSessionId)}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to fetch Qwen OAuth login status.');
+        }
+
+        const data = await res.json();
+        if (data.status === 'authorized') {
+          setQwenLoginStatus('Qwen OAuth connected.');
+          if (qwenOauthPollTimer) {
+            clearInterval(qwenOauthPollTimer);
+            qwenOauthPollTimer = null;
+          }
+          qwenOauthSessionId = null;
+          loadSettings();
+          fetchData();
+          return;
+        }
+
+        if (data.status === 'error') {
+          setQwenLoginStatus(data.error || 'Qwen OAuth login failed.', true);
+          if (qwenOauthPollTimer) {
+            clearInterval(qwenOauthPollTimer);
+            qwenOauthPollTimer = null;
+          }
+          qwenOauthSessionId = null;
+          return;
+        }
+
+        if (data.status === 'expired') {
+          setQwenLoginStatus('Qwen login session expired. Click Login again.', true);
+          if (qwenOauthPollTimer) {
+            clearInterval(qwenOauthPollTimer);
+            qwenOauthPollTimer = null;
+          }
+          qwenOauthSessionId = null;
+          return;
+        }
+
+        setQwenLoginStatus('Waiting for Qwen authorization...');
+      } catch (err) {
+        setQwenLoginStatus(err.message || 'Failed to poll Qwen OAuth status.', true);
+      }
+    }
+
+    async function startQwenOAuthLogin() {
+      try {
+        setQwenLoginStatus('Starting Qwen OAuth login...');
+        const res = await fetch('/api/qwencode/login/start', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to start Qwen OAuth login.');
+        }
+
+        qwenOauthSessionId = data.sessionId;
+        if (data.verificationUriComplete) {
+          window.open(data.verificationUriComplete, '_blank', 'noopener,noreferrer');
+        }
+
+        const codeSuffix = data.userCode ? ` (code: ${data.userCode})` : '';
+        setQwenLoginStatus(`Complete login in browser${codeSuffix}`);
+
+        if (qwenOauthPollTimer) clearInterval(qwenOauthPollTimer);
+        const pollMs = Number(data.pollIntervalMs) > 0 ? Number(data.pollIntervalMs) : 2000;
+        qwenOauthPollTimer = setInterval(pollQwenOAuthLoginStatus, pollMs);
+        pollQwenOAuthLoginStatus();
+      } catch (err) {
+        setQwenLoginStatus(err.message || 'Failed to start Qwen OAuth login.', true);
+      }
     }
 
     async function loadLogs() {
@@ -2177,6 +2268,9 @@
           if (l.status === '200') statusBadge = '<span style="background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">200 OK</span>';
           else if (l.status === 'pending') statusBadge = '<span style="background: #eff6ff; color: #1e40af; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">Pending...</span>';
           else statusBadge = `<span style="background: #fef2f2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">${l.status}</span>`;
+          const resolvedModelChip = l.resolvedModel
+            ? `<span style="background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; font-size:0.7rem; font-weight:700;">resolved: ${escapeHtml(l.resolvedModel)}</span>`
+            : '';
 
           let messagesArray = Array.isArray(l.messages) ? l.messages : (typeof l.messages === 'string' ? [{ role: 'raw', content: l.messages }] : []);
           const msgHtml = messagesArray.map(m => {
@@ -2289,6 +2383,7 @@
                   <div style="min-width:0;">
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap:wrap;">
                       <span style="font-weight: 600; font-size: 0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${l.model}</span>
+                      ${resolvedModelChip}
                       ${statusBadge}
                     </div>
                     <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; margin-top:2px;">
@@ -2408,6 +2503,7 @@
       for (const l of mostRecentFirst) {
         const timestamp = l && l.timestamp ? l.timestamp : null;
         const model = l && l.model ? l.model : '(unknown model)';
+        const resolvedModel = l && l.resolvedModel ? l.resolvedModel : null;
         const sourceMessages = Array.isArray(l && l.messages)
           ? [...l.messages].reverse()
           : (typeof (l && l.messages) === 'string' ? [{ role: 'raw', content: l.messages }] : []);
@@ -2417,7 +2513,7 @@
           const dedupeKey = `${getLocalDayKey(timestamp)}:${simpleHash(normalizeMessageForHash(assistantCandidate))}`;
           if (!seen.has(dedupeKey)) {
             seen.add(dedupeKey);
-            deduped.push({ role: 'assistant', content: l.response, timestamp, model, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
+            deduped.push({ role: 'assistant', content: l.response, timestamp, model, resolvedModel, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
           }
         }
 
@@ -2426,7 +2522,7 @@
           const dedupeKey = `${getLocalDayKey(timestamp)}:${simpleHash(normalizeMessageForHash(toolCallsCandidate))}`;
           if (!seen.has(dedupeKey)) {
             seen.add(dedupeKey);
-            deduped.push({ role: 'assistant', content: l.tool_calls, timestamp, model, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
+            deduped.push({ role: 'assistant', content: l.tool_calls, timestamp, model, resolvedModel, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
           }
         }
 
@@ -2435,7 +2531,7 @@
           const dedupeKey = `${getLocalDayKey(timestamp)}:${simpleHash(normalizeMessageForHash(functionCallCandidate))}`;
           if (!seen.has(dedupeKey)) {
             seen.add(dedupeKey);
-            deduped.push({ role: 'assistant', content: l.function_call, timestamp, model, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
+            deduped.push({ role: 'assistant', content: l.function_call, timestamp, model, resolvedModel, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
           }
         }
 
@@ -2453,7 +2549,7 @@
           const dedupeKey = `${getLocalDayKey(timestamp)}:${simpleHash(normalizeMessageForHash(candidate))}`;
           if (seen.has(dedupeKey)) continue;
           seen.add(dedupeKey);
-          deduped.push({ role, content, timestamp, model, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
+          deduped.push({ role, content, timestamp, model, resolvedModel, tsMs: Date.parse(timestamp || ''), seq: insertSeq++ });
         }
       }
 
@@ -2493,6 +2589,7 @@
               <span>${dateStr}</span>
               <span>•</span>
               <span>${escapeHtml(item.model || '(unknown model)')}</span>
+              ${item.resolvedModel ? `<span>•</span><span style="color:#3730a3;">resolved: ${escapeHtml(item.resolvedModel)}</span>` : ''}
             </div>
           </div>
         `;
@@ -2548,6 +2645,12 @@
       }
 
       const isModelPinned = m.modelId === activePinnedModelId;
+      const lastErrorHtml = m.lastError && m.lastError.message
+        ? `<div style="margin: -6px 0 14px; padding: 10px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #7f1d1d; font-size: 0.76rem;">
+            <div style="font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; color: #991b1b;">Last Ping Error</div>
+            <div style="word-break: break-word;">${escapeHtml(m.lastError.message)}</div>
+          </div>`
+        : '';
       document.getElementById('drawer-content').innerHTML = `
         <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
           <div style="min-width:0; flex:1;">
@@ -2558,11 +2661,16 @@
             <button onclick="pinModel('${isModelPinned ? '' : m.modelId}')" style="background: ${isModelPinned ? '#eff6ff' : '#f3f2f1'}; border: ${isModelPinned ? '1px solid #bfdbfe' : '1px solid transparent'}; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${isModelPinned ? '#1e40af' : 'var(--text)'}; cursor: pointer;">
               ${isModelPinned ? '📌 Unpin Model' : '📌 Pin Model'}
             </button>
+            <button onclick="pingModelNow('${m.modelId}')" style="background: #ecfeff; border: 1px solid #a5f3fc; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: #0e7490; cursor: pointer;">
+              📶 Ping Now
+            </button>
             <button onclick="toggleBan('${m.modelId}', '${m.status}')" style="background: ${m.status === 'banned' ? 'var(--text-muted)' : '#fef2f2'}; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${m.status === 'banned' ? '#fff' : '#991b1b'}; cursor: pointer;">
               ${m.status === 'banned' ? 'Unban Model' : 'Ban Model'}
             </button>
           </div>
         </div>
+        ${lastErrorHtml}
+        <div id="drawer-ping-status" style="margin: -8px 0 16px; font-size: 0.75rem; color: var(--text-muted);"></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
           <div style="background: #faf9f8; padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
             <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Coding Index</div>
@@ -2583,6 +2691,44 @@
       openDrawerModelId = null;
       document.getElementById('drawer').classList.remove('open');
       document.getElementById('overlay').classList.remove('active');
+    }
+
+    async function pingModelNow(modelId) {
+      const statusEl = document.getElementById('drawer-ping-status');
+      if (statusEl) {
+        statusEl.style.color = 'var(--text-muted)';
+        statusEl.textContent = 'Pinging model now...';
+      }
+
+      try {
+        const res = await fetch('/api/models/ping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modelId })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to ping model.');
+        }
+
+        if (statusEl) {
+          const last = data.model && data.model.lastPing != null ? `${data.model.lastPing}ms` : 'done';
+          statusEl.style.color = 'var(--success)';
+          statusEl.textContent = `Ping complete (${last}).`;
+        }
+
+        await fetchData();
+
+        if (openDrawerModelId === modelId) {
+          const updatedModel = allModels ? allModels.find(r => r.modelId === modelId) : null;
+          if (updatedModel) updateDrawerContent(updatedModel);
+        }
+      } catch (e) {
+        if (statusEl) {
+          statusEl.style.color = 'var(--error)';
+          statusEl.textContent = e.message || 'Failed to ping model.';
+        }
+      }
     }
 
     async function toggleBan(modelId, currentStatus) {

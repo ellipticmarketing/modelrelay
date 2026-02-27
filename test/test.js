@@ -1,8 +1,9 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
 
 import { sources, MODELS } from '../sources.js'
 import {
@@ -19,6 +20,8 @@ import {
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
+import { getApiKey } from '../lib/config.js'
+import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -41,6 +44,13 @@ function mockResult(overrides = {}) {
 }
 
 describe('sources data integrity', () => {
+  it('includes Qwen Code provider', () => {
+    assert.ok(sources.qwencode)
+    assert.equal(sources.qwencode.name, 'Qwen Code')
+    assert.ok(Array.isArray(sources.qwencode.models))
+    assert.ok(sources.qwencode.models.length > 0)
+  })
+
   it('has expected provider structure', () => {
     for (const [providerKey, provider] of Object.entries(sources)) {
       assert.equal(typeof providerKey, 'string')
@@ -82,6 +92,137 @@ describe('sources data integrity', () => {
       const key = `${providerKey}/${modelId}`
       assert.equal(seen.has(key), false, `Duplicate model key found: ${key}`)
       seen.add(key)
+    }
+  })
+})
+
+describe('provider api key resolution', () => {
+  it('supports Qwen Code provider env var and DashScope fallback', () => {
+    const originalQwen = process.env.QWEN_CODE_API_KEY
+    const originalDashScope = process.env.DASHSCOPE_API_KEY
+
+    try {
+      delete process.env.QWEN_CODE_API_KEY
+      delete process.env.DASHSCOPE_API_KEY
+      assert.equal(getApiKey({ apiKeys: {} }, 'qwencode'), null)
+
+      process.env.DASHSCOPE_API_KEY = 'dashscope-key'
+      assert.equal(getApiKey({ apiKeys: {} }, 'qwencode'), 'dashscope-key')
+
+      process.env.QWEN_CODE_API_KEY = 'qwen-code-key'
+      assert.equal(getApiKey({ apiKeys: {} }, 'qwencode'), 'qwen-code-key')
+    } finally {
+      if (originalQwen == null) delete process.env.QWEN_CODE_API_KEY
+      else process.env.QWEN_CODE_API_KEY = originalQwen
+
+      if (originalDashScope == null) delete process.env.DASHSCOPE_API_KEY
+      else process.env.DASHSCOPE_API_KEY = originalDashScope
+    }
+  })
+})
+
+describe('Qwen OAuth auth cycle', () => {
+  it('starts Qwen OAuth device login with PKCE', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, 'https://chat.qwen.ai/api/v1/oauth2/device/code')
+      assert.equal(options.method, 'POST')
+      assert.equal(typeof options.body, 'string')
+      assert.ok(options.body.includes('code_challenge='))
+      return {
+        ok: true,
+        async json() {
+          return {
+            device_code: 'device-code',
+            user_code: 'ABCD-EFGH',
+            verification_uri: 'https://chat.qwen.ai/device',
+            verification_uri_complete: 'https://chat.qwen.ai/device?code=ABCD-EFGH',
+            expires_in: 600,
+          }
+        },
+      }
+    }
+
+    try {
+      const session = await startQwenOauthDeviceLogin()
+      assert.equal(session.deviceCode, 'device-code')
+      assert.equal(session.userCode, 'ABCD-EFGH')
+      assert.equal(session.verificationUriComplete, 'https://chat.qwen.ai/device?code=ABCD-EFGH')
+      assert.equal(typeof session.codeVerifier, 'string')
+      assert.ok(session.codeVerifier.length > 20)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('returns pending for authorization_pending device polling', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 400,
+      async json() {
+        return { error: 'authorization_pending' }
+      },
+    })
+
+    try {
+      const result = await pollQwenOauthDeviceToken({ deviceCode: 'device-code', codeVerifier: 'code-verifier' })
+      assert.equal(result.status, 'pending')
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('accepts non-expired OAuth access tokens', () => {
+    const now = Date.now()
+    assert.equal(isQwenOauthAccessTokenValid({ access_token: 'token', expiry_date: now + 120_000 }, now), true)
+    assert.equal(isQwenOauthAccessTokenValid({ access_token: 'token', expiry_date: now + 10_000 }, now), false)
+  })
+
+  it('refreshes Qwen OAuth token and writes updated credentials', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'modelrelay-qwen-oauth-'))
+    const credsDir = join(tempDir, '.qwen')
+    const credsPath = join(credsDir, 'oauth_creds.json')
+    mkdirSync(credsDir, { recursive: true })
+    writeFileSync(credsPath, JSON.stringify({
+      access_token: 'expired-token',
+      refresh_token: 'refresh-token',
+      token_type: 'Bearer',
+      expiry_date: Date.now() - 60_000,
+    }, null, 2))
+
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, 'https://chat.qwen.ai/api/v1/oauth2/token')
+      assert.equal(options.method, 'POST')
+      assert.equal(typeof options.body, 'string')
+      assert.ok(options.body.includes('grant_type=refresh_token'))
+      return {
+        ok: true,
+        async json() {
+          return {
+            access_token: 'new-access-token',
+            refresh_token: 'new-refresh-token',
+            token_type: 'Bearer',
+            expires_in: 3600,
+          }
+        },
+      }
+    }
+
+    try {
+      const token = await resolveQwenCodeOauthAccessToken({ credentialsPath: credsPath })
+      assert.equal(token, 'new-access-token')
+
+      const updated = JSON.parse(readFileSync(credsPath, 'utf8'))
+      assert.equal(updated.access_token, 'new-access-token')
+      assert.equal(updated.refresh_token, 'new-refresh-token')
+      assert.equal(updated.token_type, 'Bearer')
+      assert.equal(typeof updated.expiry_date, 'number')
+      assert.ok(updated.expiry_date > Date.now())
+    } finally {
+      globalThis.fetch = originalFetch
+      rmSync(tempDir, { recursive: true, force: true })
     }
   })
 })

@@ -656,6 +656,28 @@ export const sources = {
       ]
     ]
   },
+  "qwencode": {
+    "name": "Qwen Code",
+    "url": "https://coding.dashscope.aliyuncs.com/v1/chat/completions",
+    "models": [
+      [
+        "coder-model",
+        "Qwen Coder (OAuth)",
+        0,
+        0,
+        0,
+        "256k"
+      ],
+      [
+        "vision-model",
+        "Qwen Vision (OAuth)",
+        0,
+        0,
+        0,
+        "128k"
+      ]
+    ]
+  },
   "googleai": {
     "name": "Google AI",
     "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -1381,6 +1403,24 @@ export const MODELS = [
     0.068,
     "128k",
     "scaleway"
+  ],
+  [
+    "coder-model",
+    "Qwen Coder (OAuth)",
+    0,
+    0,
+    0,
+    "256k",
+    "qwencode"
+  ],
+  [
+    "vision-model",
+    "Qwen Vision (OAuth)",
+    0,
+    0,
+    0,
+    "128k",
+    "qwencode"
   ],
   [
     "gemma-3-27b-it",
