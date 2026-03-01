@@ -1,5 +1,13 @@
 # modelrelay
 
+[![npm version](https://img.shields.io/npm/v/modelrelay?color=green&style=flat-square)](https://npmjs.com/package/modelrelay)
+[![GitHub stars](https://img.shields.io/github/stars/ellipticmarketing/modelrelay?style=flat-square)](https://github.com/ellipticmarketing/modelrelay/stargazers)
+[![Join Discord](https://img.shields.io/badge/Join_Discord-5865F2?style=flat-square&logo=discord)](https://discord.gg/FxseNnd5)
+
+[**Join our Discord**](https://discord.gg/FxseNnd5) for discussions, feature requests, and community support.
+
+**Auto-routing** • **80+ Free Models** • **10+ Providers** • **OpenAI-compatible**
+
 OpenAI-compatible local router that benchmarks free coding models across providers and forwards requests to the best available model.
 
 ## Install
@@ -129,3 +137,7 @@ Use `modelrelay autoupdate --status` to inspect state, `modelrelay autoupdate --
 For `Qwen Code`, modelrelay supports both API keys and Qwen OAuth cached credentials (`~/.qwen/oauth_creds.json`).
 If OAuth credentials exist, modelrelay will use them and refresh access tokens automatically.
 You can also start OAuth directly from the Web UI Providers tab using `Login with Qwen Code`.
+
+---
+
+⭐️ If you find modelrelay useful, please consider [starring the repo](https://github.com/ellipticmarketing/modelrelay)!
