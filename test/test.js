@@ -58,13 +58,14 @@ describe('sources data integrity', () => {
     }
   })
 
-  it('provider model tuples have 4 fields', () => {
+  it('provider model tuples have 3 fields', () => {
     for (const provider of Object.values(sources)) {
       for (const model of provider.models) {
         assert.ok(Array.isArray(model))
-        assert.equal(model.length, 4)
+        assert.equal(model.length, 3)
         assert.equal(typeof model[0], 'string')
         assert.equal(typeof model[1], 'string')
+        assert.equal(typeof model[2], 'string')
       }
     }
   })

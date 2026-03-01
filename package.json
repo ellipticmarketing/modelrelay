@@ -43,6 +43,7 @@
     "lib/",
     "public/",
     "sources.js",
+    "scores.js",
     "README.md",
     "LICENSE"
   ],
