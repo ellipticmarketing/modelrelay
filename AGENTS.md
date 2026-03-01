@@ -19,18 +19,24 @@ This ensures the codebase remains in a working state at all times.
 When releasing a new version, follow this exact process:
 
 1. **Version Check**: Check if version already exists with `git log --oneline | grep "^[a-f0-9]\+ [0-9]"`
-2. **Version Bump**: Update version in `package.json` (e.g., `0.1.16` → `0.1.17`)
+2. **Version Bump**: Update version in `package.json`. If the releas only includes bug 
+fixes, bump a patch version  (e.g., `0.1.16` → `0.1.17`). If it includes new features, bump a minor version  (e.g., `0.1.16` → `0.2.0`)
 3. **Commit ALL Changed Files**: `git add . && git commit -m "0.1.17"`
    - Always commit with just the version number as the message (e.g., "0.1.17")
    - Include ALL modified files in the commit (bin/, lib/, test/, README.md, etc.)
 4. **Push**: `git push origin main` — GitHub Actions will auto-publish to npm
-5. **Wait for npm Publish":
+5. **Create GitHub Release**:
+   ```bash
+   gh release create VERSION --title "VERSION" --notes "Release notes"
+   ```
+   (e.g., `gh release create 1.5.0 --title "1.5.0" --notes "Bug fixes and new features"`)
+6. **Wait for npm Publish":
    ```bash
    for i in $(seq 1 30); do sleep 10; v=$(npm view modelrelay version 2>/dev/null); echo "Attempt $i: npm version = $v"; if [ "$v" = "0.1.17" ]; then echo "✅ published!"; break; fi; done
    ```
-5. **Install and Verify**: `npm install -g modelrelay@0.1.17`
-6. **Test Binary**: `modelrelay --help` (or any other command to verify it works)
-7. **Only when the global npm-installed version works → the release is confirmed**
+7. **Install and Verify**: `npm install -g modelrelay@0.1.17`
+8. **Test Binary**: `modelrelay --help` (or any other command to verify it works)
+9. **Only when the global npm-installed version works → the release is confirmed**
 
 **Why:** A local `npm install -g .` can mask issues because it symlinks the repo. The real npm package is a tarball built from the `files` field — only a real npm install will catch missing files.
 
