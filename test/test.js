@@ -117,6 +117,23 @@ describe('provider api key resolution', () => {
       else process.env.DASHSCOPE_API_KEY = originalDashScope
     }
   })
+
+  it('supports KiloCode provider env var override', () => {
+    const original = process.env.KILOCODE_API_KEY
+
+    try {
+      delete process.env.KILOCODE_API_KEY
+      assert.equal(getApiKey({ apiKeys: {} }, 'kilocode'), null)
+
+      process.env.KILOCODE_API_KEY = 'kilocode-env-key'
+      assert.equal(getApiKey({ apiKeys: {} }, 'kilocode'), 'kilocode-env-key')
+
+      assert.equal(getApiKey({ apiKeys: { kilocode: 'file-key' } }, 'kilocode'), 'kilocode-env-key')
+    } finally {
+      if (original == null) delete process.env.KILOCODE_API_KEY
+      else process.env.KILOCODE_API_KEY = original
+    }
+  })
 })
 
 describe('Qwen OAuth auth cycle', () => {

@@ -520,6 +520,11 @@ export const sources = {
       ]
     ]
   },
+  "kilocode": {
+    "name": "KiloCode",
+    "url": "https://api.kilo.ai/api/gateway/chat/completions",
+    "models": []
+  },
   "googleai": {
     "name": "Google AI",
     "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
