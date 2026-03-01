@@ -2375,8 +2375,8 @@
           const statusColor = p.hasKey ? '#065f46' : (tokenOptional ? '#1e40af' : '#92400e');
           const statusBg = p.hasKey ? '#ecfdf5' : (tokenOptional ? '#eff6ff' : '#fffbeb');
           const statusText = p.hasKey
-            ? (tokenOptional ? 'Token configured' : 'Key configured')
-            : (tokenOptional ? 'Token optional' : 'No API key');
+            ? (tokenOptional ? 'API Key configured' : 'Key configured')
+            : (tokenOptional ? 'API Key optional' : 'No API key');
 
           let rateLimitHtml = '';
           if (rl) {
@@ -2423,11 +2423,11 @@
             </div>
           ` : '';
 
-          const optionalBearerAuthHtml = tokenOptional ? `
+          const optionalBearerAuthHtml = (tokenOptional && p.hasKey) ? `
             <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; cursor:pointer;">
                 <input type="checkbox" id="bearer-auth-${p.key}" ${p.useBearerAuth !== false ? 'checked' : ''} onchange="updateProviderBearerAuth('${p.key}')">
-                Attach bearer token (optional)
+                Attach API Key as Bearer
               </label>
             </div>
           ` : '';
@@ -2450,7 +2450,7 @@
               </div>
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center;">
-              <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'Token Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter bearer token (optional)...' : 'Enter API Key...')}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
+              <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'API Key Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter API Key (optional)...' : 'Enter API Key...')}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
               <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:white; cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
             </div>
             ${optionalBearerAuthHtml}
