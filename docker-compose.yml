@@ -1,0 +1,14 @@
+services:
+  modelrelay:
+    build: .
+    container_name: modelrelay
+    restart: unless-stopped
+    ports:
+      - "7352:7352"
+    volumes:
+      - modelrelay_config:/app/config
+    environment:
+      - NODE_ENV=production
+      - HOME=/app/config
+volumes:
+  modelrelay_config:
