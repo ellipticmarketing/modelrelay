@@ -26,7 +26,7 @@
 - ⚡ **Lightning Fast:** The built-in benchmark continually evaluates metrics to pick the fastest and most capable LLM for your request.
 - 🔄 **OpenAI-Compatible:** A perfect drop-in replacement that works seamlessly with your existing tools, scripts, and workflows.
 
-## 🚀 Install
+## 🚀 Install via NPM
 
 ```bash
 npm install -g modelrelay
@@ -47,6 +47,19 @@ Router endpoint:
 - Base URL: `http://127.0.0.1:7352/v1`
 - API key: any string
 - Model: `auto-fastest` (router picks actual backend)
+
+## 🚀 Install via Docker
+```bash
+mkdir modelrelay
+
+cd modelrelay
+
+wget -O Dockerfile https://raw.githubusercontent.com/ellipticmarketing/modelrelay/master/Dockerfile
+wget -O docker-compose.yml https://raw.githubusercontent.com/ellipticmarketing/modelrelay/master/docker-compose.yml
+
+docker compose up
+```
+
 
 ## OpenCode Quick Start
 
