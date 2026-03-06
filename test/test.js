@@ -13,6 +13,7 @@ import {
   sortResults,
   findBestModel,
   rankModelsForRouting,
+  buildModelGroups,
   filterModelsByRequested,
   isRetryableProxyStatus,
   parseArgs,
@@ -768,6 +769,33 @@ describe('model grouping and filtering', () => {
     mockResult({ modelId: 'meta/llama3.3-70b', label: 'Llama 3.3 (Meta)' }),
   ]
 
+  it('builds one catalog entry per normalized label group', () => {
+    const groups = buildModelGroups([
+      mockResult({ modelId: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5' }),
+      mockResult({ modelId: 'openrouter/moonshotai/kimi-k2.5:free', label: 'Kimi K2.5' }),
+      mockResult({ modelId: 'moonshotai/kimi-k2-thinking', label: 'Kimi K2 Thinking' }),
+    ], canonicalizeModelId)
+
+    assert.equal(groups.length, 2)
+    const kimiGroup = groups.find(group => group.id === 'kimi-k2.5')
+    assert.ok(kimiGroup)
+    assert.equal(kimiGroup.label, 'Kimi K2.5')
+    assert.equal(kimiGroup.models.length, 2)
+    assert.ok(kimiGroup.aliases.includes('kimi k2.5'))
+    assert.ok(kimiGroup.aliases.includes('moonshotai/kimi-k2.5'))
+    assert.ok(kimiGroup.aliases.includes('kimi-k2.5'))
+  })
+
+  it('uses the canonical unprefixed model id for grouped entries', () => {
+    const groups = buildModelGroups([
+      mockResult({ modelId: 'minimax/minimax-m2.5:free', label: 'MiniMax M2.5' }),
+      mockResult({ modelId: 'vendor/minimax-m2.5', label: 'MiniMax M2.5' }),
+    ], canonicalizeModelId)
+
+    assert.equal(groups.length, 1)
+    assert.equal(groups[0].id, 'minimax-m2.5')
+  })
+
   it('filters by exact model ID', () => {
     const filtered = filterModelsByRequested(results, 'nvidia/glm4.7', canonicalizeModelId)
     assert.equal(filtered.length, 1)
@@ -787,9 +815,9 @@ describe('model grouping and filtering', () => {
     assert.ok(filtered.some(r => r.modelId === 'openrouter/glm4.7:free'))
   })
 
-  it('falls back to all models if no match found', () => {
+  it('returns no models if no match is found', () => {
     const filtered = filterModelsByRequested(results, 'non-existent-model', canonicalizeModelId)
-    assert.equal(filtered.length, 3)
+    assert.equal(filtered.length, 0)
   })
 
   it('returns all models for auto-fastest', () => {

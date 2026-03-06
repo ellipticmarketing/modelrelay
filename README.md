@@ -169,6 +169,40 @@ You can also import by stdin:
 modelrelay config export | modelrelay config import
 ```
 
+## Endpoints
+
+### `/v1/chat/completions`
+
+`POST /v1/chat/completions` is an OpenAI-compatible chat completions endpoint.
+
+- Use `model: "auto-fastest"` to route to the best model overall
+- Use a grouped model ID such as `minimax-m2.5`, `kimi-k2.5`, or `glm4.7` to route within that model group
+- For grouped IDs, modelrelay selects the provider with the best current QoS for that group
+- Streaming and non-streaming requests are both supported
+
+### `/v1/models`
+
+`GET /v1/models` returns the models exposed by the router.
+
+- Model IDs are grouped slugs such as `minimax-m2.5`, `kimi-k2.5`, and `glm4.7`
+- Each grouped ID can represent the same model across multiple providers
+- When you select one of these IDs in `/v1/chat/completions`, modelrelay routes the request to the provider with the best current QoS for that model group
+- `auto-fastest` is also exposed and routes to the best model overall
+
+Example:
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "auto-fastest", "object": "model", "owned_by": "router" },
+    { "id": "minimax-m2.5", "object": "model", "owned_by": "relay" },
+    { "id": "kimi-k2.5", "object": "model", "owned_by": "relay" },
+    { "id": "glm4.7", "object": "model", "owned_by": "relay" }
+  ]
+}
+```
+
 ## Config
 
 - Router config file: `~/.modelrelay.json`
