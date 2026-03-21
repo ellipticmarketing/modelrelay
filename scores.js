@@ -2,10 +2,36 @@
  * @file scores.js
  * @description Model intelligence scores (single source of truth).
  * Keys are canonical model IDs (no suffix like :free).
+ * Merged from modelrelay + free-coding-models (SWE-bench Verified scores).
  */
 
 export const scores = {
   "arcee-ai/trinity-large-preview": 0.778,
+  "deepseek-v3.2": 0.731,
+  "deepseek-v3": 0.62,
+  "deepseek-r1": 0.61,
+  "glm-4.5": 0.75,
+  "glm-4.6": 0.70,
+  "glm-4.7": 0.738,
+  "glm-5": 0.778,
+  "kimi-k2": 0.658,
+  "kimi-k2-0905": 0.68,
+  "minimax-m2.1": 0.74,
+  "minimax-m2.5": 0.802,
+  "minimax-m2": 0.694,
+  "qwen3-32b": 0.50,
+  "qwen3-coder-30b-a3b-instruct": 0.55,
+  "qwen3-coder-plus": 0.696,
+  "qwen3-coder-max": 0.67,
+  "qwen3-coder-next": 0.65,
+  "qwen3-max": 0.55,
+  "sonar": 0.25,
+  "sonar-pro": 0.32,
+  "sonar-reasoning": 0.45,
+  "sonar-reasoning-pro": 0.50,
+  "step-3.5-flash": 0.744,
+  "stepfun-ai/step-3.5-flash": 0.744,
+  "tbstars2-200b-a13b": 0.778,
   "arcee-ai/trinity-mini": 0.35,
   "big-pickle": 0.68,
   "bytedance/seed-oss-36b-instruct": 0.38,
