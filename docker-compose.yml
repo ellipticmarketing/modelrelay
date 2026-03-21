@@ -1,6 +1,6 @@
 services:
   modelrelay:
-    build: .
+    image: ghcr.io/stgreenb/modelrelay:master
     container_name: modelrelay
     restart: unless-stopped
     ports:

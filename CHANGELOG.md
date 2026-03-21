@@ -15,7 +15,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
-- **Docker compose**: Removed invalid `proxy:` block from `docker-compose.yml` (not valid in Compose v2). HTTP_PROXY/HTTPS_PROXY/NO_PROXY are now passed as standard environment variables.
+- **Docker compose**: Removed invalid `proxy:` block. Changed from `build: .` to use GHCR image `ghcr.io/stgreenb/modelrelay:master` directly. HTTP_PROXY/HTTPS_PROXY/NO_PROXY are passed as standard environment variables. Named volume `modelrelay_config` persists API keys and settings at `/app/config`.
 - **Dockerfile**: Uses `npm ci --omit=dev` for reproducible builds. Removed git dependency (was only needed for pnpm).
 
 ### Documentation
