@@ -80,3 +80,43 @@ Do not bump the major version.
 - **CLI arg parsing** — current router flags (`--port`, `--no-log`, `--ban`, `--onboard`)
 - **Package sanity** — package.json fields, bin entry exists, shebang, ESM imports
 
+## Sources Sync (free-coding-models Integration)
+
+### Upstream Dependency
+
+`free-coding-models-src/` is a git-cloned copy of [free-coding-models](https://github.com/vava-nessa/free-coding-models) (v0.3.25+) located at `../free-coding-models-src` relative to this project root. It provides the canonical upstream model definitions.
+
+**Model array formats:**
+- **modelrelay local**: `[modelId, label, ctx]` (3 fields)
+- **free-coding-models upstream**: `[modelId, label, tier, sweScore, ctx]` (5 fields)
+- **modelrelay `MODELS` export**: `[modelId, label, intell, ctx, providerKey]` (intell is a float 0-1 derived from scores.js)
+
+### Sync Script
+
+`node scripts/sync-sources.js` syncs model definitions from the upstream clone into local `sources.js`:
+
+```bash
+npm run sync:sources        # apply sync
+npm run sync:sources:dry    # preview changes (dry run + verbose)
+```
+
+**What it does:**
+- Reads `../free-coding-models-src/sources.js`
+- For each shared provider (nvidia, groq, cerebras, etc.), compares upstream models with local
+- Adds new models, updates label/ctx changes, preserves unchanged entries
+- Skips CLI-only providers (rovo, gemini)
+- Skips modelrelay-only providers (kilocode, openai-compatible, qwencode)
+- Prints a diff summary (+added, ~updated)
+
+**What it preserves:**
+- Provider URLs (stable across upstream versions)
+- Provider metadata (name, url)
+- modelrelay-specific providers and their models
+- MODEL_ID_ALIASES, MODEL_LABEL_OVERRIDES, resolveAliasedModelId, etc.
+- scores.js (tier/sweScore handled separately)
+
+**Manual post-sync steps:**
+1. Update `scores.js` if new models need intelligence scores
+2. Run `npm test` to verify
+3. Commit the changes
+

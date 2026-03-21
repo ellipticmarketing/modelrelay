@@ -1,13 +1,11 @@
 FROM node:24-alpine
 
-RUN apk add --no-cache ca-certificates git
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
-RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN pnpm install --frozen-lockfile
+RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev
 
 COPY . .
 
@@ -15,5 +13,5 @@ EXPOSE 7352
 
 ENV NODE_ENV=production
 
-ENTRYPOINT ["pnpm", "start"]
+ENTRYPOINT ["node", "bin/modelrelay.js"]
 CMD ["start"]
