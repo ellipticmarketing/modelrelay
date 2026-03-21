@@ -11,7 +11,7 @@ All notable changes to this project are documented in this file.
 - **Sources sync script** (`scripts/sync-sources.js`): Merges upstream model definitions from [free-coding-models](https://github.com/vava-nessa/free-coding-models) into local `sources.js`. Run with `npm run sync:sources` or preview with `npm run sync:sources:dry`.
 - **Dashboard stability scores**: New sortable "Stability" column in the web dashboard. Displays a 0-100 stability score per model based on ping latency patterns. Color-coded: green (70+), light green (50-70), yellow (30-50), red (<30).
 - **stabilityScore API field**: `/api/models` endpoint now returns a `stabilityScore` field per model. Computed from ping history using: p95 latency (30%), jitter (30%), spike rate (20%), uptime (20%). Returns `null` until enough pings accumulate.
-- **Docker build fix**: Switched from pnpm to npm in Dockerfile to fix missing module errors. Added `.dockerignore` to exclude `node_modules/` from Docker context.
+- **GitHub Actions GHCR workflow** (`.github/workflows/docker.yml`): Auto-builds and publishes Docker image to GHCR on every push to `master`/`main` and on version tags (`v*`). Uses `linux/amd64` only. Image available at `ghcr.io/stgreenb/modelrelay`.
 
 ### Changed
 
