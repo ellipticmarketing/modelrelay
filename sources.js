@@ -8,6 +8,24 @@ import { scores } from './scores.js'
 
 export const MODEL_ID_ALIASES = {
   'mimo-v2-omni-free': 'xiaomi/mimo-v2-omni:free',
+  'Qwen3-32B': 'qwen3-32b',
+  'mistralai/Mixtral-8x22B-Instruct-v0.1': 'mistralai/mixtral-8x22b-instruct-v0.1',
+  'moonshotai/Kimi-K2-Instruct': 'moonshotai/kimi-k2-instruct',
+  'Qwen/Qwen3-235B-A22B': 'qwen/qwen3-235b-a22b',
+  'Qwen/Qwen2.5-Coder-32B-Instruct': 'qwen/qwen2.5-coder-32b-instruct',
+  'meta-llama/Llama-3.3-70B-Instruct': 'meta-llama/llama-3.3-70b-instruct',
+  'zai/glm-4.5-air': 'z-ai/glm-4.5-air',
+  'Qwen/Qwen3-Coder-480B-A35B-Instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
+  'deepseek-ai/DeepSeek-V3.2': 'deepseek-ai/deepseek-v3.2',
+  'deepseek-ai/DeepSeek-R1': 'deepseek-ai/deepseek-r1',
+  'Qwen/Qwen3-Coder-30B-A3B-Instruct': 'qwen/qwen3-coder-30b-a3b-instruct',
+  'moonshotai/Kimi-K2.5': 'moonshotai/kimi-k2.5',
+  'deepseek-ai/DeepSeek-V3.1': 'deepseek-ai/deepseek-v3.1',
+  'meta-llama/Llama-3.3-70B-Instruct-Turbo': 'meta-llama/llama-3.3-70b-instruct',
+  '@cf/qwen/qwen2.5-coder-32b-instruct': 'qwen/qwen2.5-coder-32b-instruct',
+  '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': 'deepseek-ai/deepseek-r1-distill-qwen-32b',
+  '@cf/openai/gpt-oss-20b': 'openai/gpt-oss-20b',
+  'TBStars2-200B-A13B': 'tbstars2-200b-a13b',
 }
 
 export const MODEL_LABEL_OVERRIDES = {

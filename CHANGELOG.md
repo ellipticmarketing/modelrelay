@@ -4,6 +4,11 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Skip ping for providers without API key**: Providers that require authentication (not in `kilocode` or `opencode`) are no longer pinged when no API key is configured. Instead they are marked "No Auth" immediately, avoiding false positives in the model table.
+- **Intelligence scores for all 164 models**: Added missing `MODEL_ID_ALIASES` entries and scores for SambaNova, iFlow, and other providers whose model ID formats didn't match the scores.js key format. All models now display their SWE-bench tier instead of "Unknown".
+
 ## [1.11.0] - 2026-03-21
 
 ### Added
