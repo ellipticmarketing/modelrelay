@@ -25,7 +25,7 @@ import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autos
 import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
-import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, extractOllamaModelRecords, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOllamaModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
+import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, extractOllamaModelRecords, getAccountStatus, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOllamaModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -1034,6 +1034,50 @@ describe('parseArgs', () => {
     assert.equal(imported.configAction, 'import')
     assert.equal(imported.configPayload, 'mrconf:v1:abc123')
   })
+
+  it('parses config set-keys command', () => {
+    const result = parseArgs(argv('config', 'set-keys', 'kilocode', 'key1,key2,key3'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'set-keys')
+    assert.equal(result.configProvider, 'kilocode')
+    assert.equal(result.configKeys, 'key1,key2,key3')
+  })
+
+  it('parses config add-key command', () => {
+    const result = parseArgs(argv('config', 'add-key', 'nvidia', 'nvapi-extra'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'add-key')
+    assert.equal(result.configProvider, 'nvidia')
+    assert.equal(result.configKeys, 'nvapi-extra')
+  })
+
+  it('parses config remove-key command', () => {
+    const result = parseArgs(argv('config', 'remove-key', 'groq', '1'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'remove-key')
+    assert.equal(result.configProvider, 'groq')
+    assert.equal(result.configKeys, '1')
+  })
+
+  it('parses config set-maxturns command', () => {
+    const result = parseArgs(argv('config', 'set-maxturns', 'kilocode', '20'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'set-maxturns')
+    assert.equal(result.configProvider, 'kilocode')
+    assert.equal(result.configMaxTurns, '20')
+  })
+
+  it('parses config set-maxturns with 0 to disable', () => {
+    const result = parseArgs(argv('config', 'set-maxturns', 'kilocode', '0'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'set-maxturns')
+    assert.equal(result.configMaxTurns, '0')
+  })
+
+  it('parses status command', () => {
+    const result = parseArgs(argv('status'))
+    assert.equal(result.command, 'status')
+  })
 })
 
 describe('parseOpenRouterKeyRateLimit', () => {
@@ -1480,6 +1524,13 @@ describe('multi-account round-robin', () => {
       const imported = importConfigToken(token)
       assert.deepEqual(imported.apiKeys.kilocode, ['key1', 'key2'])
       assert.equal(imported.apiKeys.nvidia, 'nv-key')
+    })
+  })
+
+  describe('getAccountStatus', () => {
+    it('returns empty when pool state is not initialized', () => {
+      const result = getAccountStatus({ apiKeys: { kilocode: ['k1', 'k2'] } })
+      assert.deepEqual(result, { providers: {} })
     })
   })
 })
