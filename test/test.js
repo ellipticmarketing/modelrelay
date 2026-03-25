@@ -22,7 +22,7 @@ import {
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
-import { exportConfigToken, getApiKey, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
+import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
 import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
@@ -1091,5 +1091,150 @@ describe('package and entrypoint sanity', () => {
     assert.ok(binContent.startsWith('#!/usr/bin/env node'))
     assert.ok(binContent.includes("from '../lib/utils.js'"))
     assert.ok(binContent.includes("from '../lib/onboard.js'"))
+  })
+})
+
+describe('multi-account round-robin', () => {
+  describe('getApiKeyPool', () => {
+    it('returns single-element array for string key', () => {
+      const config = { apiKeys: { nvidia: 'nvapi-key1' } }
+      assert.deepEqual(getApiKeyPool(config, 'nvidia'), ['nvapi-key1'])
+    })
+
+    it('returns array for array keys', () => {
+      const config = { apiKeys: { kilocode: ['key1', 'key2', 'key3'] } }
+      assert.deepEqual(getApiKeyPool(config, 'kilocode'), ['key1', 'key2', 'key3'])
+    })
+
+    it('returns empty array for missing provider', () => {
+      const config = { apiKeys: {} }
+      assert.deepEqual(getApiKeyPool(config, 'nvidia'), [])
+    })
+
+    it('filters empty strings from array', () => {
+      const config = { apiKeys: { groq: ['key1', '', '  ', 'key2'] } }
+      assert.deepEqual(getApiKeyPool(config, 'groq'), ['key1', 'key2'])
+    })
+
+    it('trims whitespace from keys', () => {
+      const config = { apiKeys: { groq: ['  key1  ', '  key2  '] } }
+      assert.deepEqual(getApiKeyPool(config, 'groq'), ['key1', 'key2'])
+    })
+
+    it('env var overrides return single-element array', () => {
+      withEnv({ NVIDIA_API_KEY: 'env-key' }, () => {
+        const config = { apiKeys: { nvidia: ['file-key1', 'file-key2'] } }
+        assert.deepEqual(getApiKeyPool(config, 'nvidia'), ['env-key'])
+      })
+    })
+
+    it('qwencode env var works with DASHSCOPE_API_KEY fallback', () => {
+      withEnv({ DASHSCOPE_API_KEY: 'dashscope-key' }, () => {
+        assert.deepEqual(getApiKeyPool({ apiKeys: {} }, 'qwencode'), ['dashscope-key'])
+      })
+    })
+  })
+
+  describe('getApiKey backward compatibility', () => {
+    it('returns first element for array keys', () => {
+      const config = { apiKeys: { kilocode: ['key1', 'key2', 'key3'] } }
+      assert.equal(getApiKey(config, 'kilocode'), 'key1')
+    })
+
+    it('returns string for string keys', () => {
+      const config = { apiKeys: { nvidia: 'nvapi-key1' } }
+      assert.equal(getApiKey(config, 'nvidia'), 'nvapi-key1')
+    })
+
+    it('returns null for empty array', () => {
+      const config = { apiKeys: { groq: [] } }
+      assert.equal(getApiKey(config, 'groq'), null)
+    })
+  })
+
+  describe('hasMultipleKeys', () => {
+    it('returns true for multiple array keys', () => {
+      const config = { apiKeys: { kilocode: ['key1', 'key2'] } }
+      assert.equal(hasMultipleKeys(config, 'kilocode'), true)
+    })
+
+    it('returns false for single string key', () => {
+      const config = { apiKeys: { nvidia: 'nvapi-key1' } }
+      assert.equal(hasMultipleKeys(config, 'nvidia'), false)
+    })
+
+    it('returns false for single-element array', () => {
+      const config = { apiKeys: { groq: ['key1'] } }
+      assert.equal(hasMultipleKeys(config, 'groq'), false)
+    })
+
+    it('returns false for missing provider', () => {
+      assert.equal(hasMultipleKeys({ apiKeys: {} }, 'nvidia'), false)
+    })
+  })
+
+  describe('getMaxTurns', () => {
+    it('returns configured value', () => {
+      const config = { providers: { kilocode: { maxTurns: 20 } } }
+      assert.equal(getMaxTurns(config, 'kilocode'), 20)
+    })
+
+    it('returns 0 when not configured', () => {
+      assert.equal(getMaxTurns({ providers: {} }, 'kilocode'), 0)
+      assert.equal(getMaxTurns({ providers: { kilocode: {} } }, 'kilocode'), 0)
+    })
+
+    it('returns 0 for invalid values', () => {
+      const config = { providers: { kilocode: { maxTurns: -1 } } }
+      assert.equal(getMaxTurns(config, 'kilocode'), 0)
+      const config2 = { providers: { kilocode: { maxTurns: 'abc' } } }
+      assert.equal(getMaxTurns(config2, 'kilocode'), 0)
+    })
+
+    it('floors fractional values', () => {
+      const config = { providers: { kilocode: { maxTurns: 10.7 } } }
+      assert.equal(getMaxTurns(config, 'kilocode'), 10)
+    })
+  })
+
+  describe('normalizeConfigShape with arrays', () => {
+    it('normalizes array apiKeys by trimming and filtering', () => {
+      const config = {
+        apiKeys: { kilocode: ['  key1  ', '', 'key2'] },
+        providers: {},
+      }
+      const normalized = normalizeConfigShape(config)
+      assert.deepEqual(normalized.apiKeys.kilocode, ['key1', 'key2'])
+    })
+
+    it('preserves string apiKeys unchanged', () => {
+      const config = {
+        apiKeys: { nvidia: '  nv-key  ' },
+        providers: {},
+      }
+      const normalized = normalizeConfigShape(config)
+      assert.equal(normalized.apiKeys.nvidia, 'nv-key')
+    })
+
+    it('handles mixed string and array apiKeys', () => {
+      const config = {
+        apiKeys: { nvidia: 'nv-key', kilocode: ['key1', 'key2'] },
+        providers: {},
+      }
+      const normalized = normalizeConfigShape(config)
+      assert.equal(normalized.apiKeys.nvidia, 'nv-key')
+      assert.deepEqual(normalized.apiKeys.kilocode, ['key1', 'key2'])
+    })
+
+    it('round-trips through export/import with array keys', () => {
+      const config = {
+        apiKeys: { kilocode: ['key1', 'key2'], nvidia: 'nv-key' },
+        providers: { kilocode: { enabled: true } },
+      }
+      const token = exportConfigToken(config)
+      const imported = importConfigToken(token)
+      assert.deepEqual(imported.apiKeys.kilocode, ['key1', 'key2'])
+      assert.equal(imported.apiKeys.nvidia, 'nv-key')
+    })
   })
 })
