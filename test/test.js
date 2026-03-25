@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test'
+import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -22,12 +22,30 @@ import {
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
-import { exportConfigToken, getApiKey, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
+import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
-import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
+import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, getAccountStatus, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
+
+let tempConfigFile
+
+beforeEach(() => {
+  tempConfigFile = join(mkdtempSync(join(tmpdir(), 'modelrelay-test-')), 'config.json')
+  process.env.MODELRELAY_CONFIG = tempConfigFile
+})
+
+afterEach(() => {
+  if (tempConfigFile && existsSync(tempConfigFile)) {
+    rmSync(tempConfigFile, { force: true })
+  }
+  const configDir = tempConfigFile ? dirname(tempConfigFile) : null
+  if (configDir && existsSync(configDir)) {
+    rmSync(configDir, { recursive: true, force: true })
+  }
+  delete process.env.MODELRELAY_CONFIG
+})
 
 function mockResult(overrides = {}) {
   return {
@@ -789,6 +807,50 @@ describe('parseArgs', () => {
     assert.equal(imported.configAction, 'import')
     assert.equal(imported.configPayload, 'mrconf:v1:abc123')
   })
+
+  it('parses config set-keys command', () => {
+    const result = parseArgs(argv('config', 'set-keys', 'kilocode', 'key1,key2,key3'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'set-keys')
+    assert.equal(result.configProvider, 'kilocode')
+    assert.equal(result.configKeys, 'key1,key2,key3')
+  })
+
+  it('parses config add-key command', () => {
+    const result = parseArgs(argv('config', 'add-key', 'nvidia', 'nvapi-extra'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'add-key')
+    assert.equal(result.configProvider, 'nvidia')
+    assert.equal(result.configKeys, 'nvapi-extra')
+  })
+
+  it('parses config remove-key command', () => {
+    const result = parseArgs(argv('config', 'remove-key', 'groq', '1'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'remove-key')
+    assert.equal(result.configProvider, 'groq')
+    assert.equal(result.configKeys, '1')
+  })
+
+  it('parses config set-maxturns command', () => {
+    const result = parseArgs(argv('config', 'set-maxturns', 'kilocode', '20'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'set-maxturns')
+    assert.equal(result.configProvider, 'kilocode')
+    assert.equal(result.configMaxTurns, '20')
+  })
+
+  it('parses config set-maxturns with 0 to disable', () => {
+    const result = parseArgs(argv('config', 'set-maxturns', 'kilocode', '0'))
+    assert.equal(result.command, 'config')
+    assert.equal(result.configAction, 'set-maxturns')
+    assert.equal(result.configMaxTurns, '0')
+  })
+
+  it('parses status command', () => {
+    const result = parseArgs(argv('status'))
+    assert.equal(result.command, 'status')
+  })
 })
 
 describe('parseOpenRouterKeyRateLimit', () => {
@@ -1091,5 +1153,157 @@ describe('package and entrypoint sanity', () => {
     assert.ok(binContent.startsWith('#!/usr/bin/env node'))
     assert.ok(binContent.includes("from '../lib/utils.js'"))
     assert.ok(binContent.includes("from '../lib/onboard.js'"))
+  })
+})
+
+describe('multi-account round-robin', () => {
+  describe('getApiKeyPool', () => {
+    it('returns single-element array for string key', () => {
+      const config = { apiKeys: { nvidia: 'nvapi-key1' } }
+      assert.deepEqual(getApiKeyPool(config, 'nvidia'), ['nvapi-key1'])
+    })
+
+    it('returns array for array keys', () => {
+      const config = { apiKeys: { kilocode: ['key1', 'key2', 'key3'] } }
+      assert.deepEqual(getApiKeyPool(config, 'kilocode'), ['key1', 'key2', 'key3'])
+    })
+
+    it('returns empty array for missing provider', () => {
+      const config = { apiKeys: {} }
+      assert.deepEqual(getApiKeyPool(config, 'nvidia'), [])
+    })
+
+    it('filters empty strings from array', () => {
+      const config = { apiKeys: { groq: ['key1', '', '  ', 'key2'] } }
+      assert.deepEqual(getApiKeyPool(config, 'groq'), ['key1', 'key2'])
+    })
+
+    it('trims whitespace from keys', () => {
+      const config = { apiKeys: { groq: ['  key1  ', '  key2  '] } }
+      assert.deepEqual(getApiKeyPool(config, 'groq'), ['key1', 'key2'])
+    })
+
+    it('env var overrides return single-element array', () => {
+      withEnv({ NVIDIA_API_KEY: 'env-key' }, () => {
+        const config = { apiKeys: { nvidia: ['file-key1', 'file-key2'] } }
+        assert.deepEqual(getApiKeyPool(config, 'nvidia'), ['env-key'])
+      })
+    })
+
+    it('qwencode env var works with DASHSCOPE_API_KEY fallback', () => {
+      withEnv({ DASHSCOPE_API_KEY: 'dashscope-key' }, () => {
+        assert.deepEqual(getApiKeyPool({ apiKeys: {} }, 'qwencode'), ['dashscope-key'])
+      })
+    })
+  })
+
+  describe('getApiKey backward compatibility', () => {
+    it('returns first element for array keys', () => {
+      const config = { apiKeys: { kilocode: ['key1', 'key2', 'key3'] } }
+      assert.equal(getApiKey(config, 'kilocode'), 'key1')
+    })
+
+    it('returns string for string keys', () => {
+      const config = { apiKeys: { nvidia: 'nvapi-key1' } }
+      assert.equal(getApiKey(config, 'nvidia'), 'nvapi-key1')
+    })
+
+    it('returns null for empty array', () => {
+      const config = { apiKeys: { groq: [] } }
+      assert.equal(getApiKey(config, 'groq'), null)
+    })
+  })
+
+  describe('hasMultipleKeys', () => {
+    it('returns true for multiple array keys', () => {
+      const config = { apiKeys: { kilocode: ['key1', 'key2'] } }
+      assert.equal(hasMultipleKeys(config, 'kilocode'), true)
+    })
+
+    it('returns false for single string key', () => {
+      const config = { apiKeys: { nvidia: 'nvapi-key1' } }
+      assert.equal(hasMultipleKeys(config, 'nvidia'), false)
+    })
+
+    it('returns false for single-element array', () => {
+      const config = { apiKeys: { groq: ['key1'] } }
+      assert.equal(hasMultipleKeys(config, 'groq'), false)
+    })
+
+    it('returns false for missing provider', () => {
+      assert.equal(hasMultipleKeys({ apiKeys: {} }, 'nvidia'), false)
+    })
+  })
+
+  describe('getMaxTurns', () => {
+    it('returns configured value', () => {
+      const config = { providers: { kilocode: { maxTurns: 20 } } }
+      assert.equal(getMaxTurns(config, 'kilocode'), 20)
+    })
+
+    it('returns 0 when not configured', () => {
+      assert.equal(getMaxTurns({ providers: {} }, 'kilocode'), 0)
+      assert.equal(getMaxTurns({ providers: { kilocode: {} } }, 'kilocode'), 0)
+    })
+
+    it('returns 0 for invalid values', () => {
+      const config = { providers: { kilocode: { maxTurns: -1 } } }
+      assert.equal(getMaxTurns(config, 'kilocode'), 0)
+      const config2 = { providers: { kilocode: { maxTurns: 'abc' } } }
+      assert.equal(getMaxTurns(config2, 'kilocode'), 0)
+    })
+
+    it('floors fractional values', () => {
+      const config = { providers: { kilocode: { maxTurns: 10.7 } } }
+      assert.equal(getMaxTurns(config, 'kilocode'), 10)
+    })
+  })
+
+  describe('normalizeConfigShape with arrays', () => {
+    it('normalizes array apiKeys by trimming and filtering', () => {
+      const config = {
+        apiKeys: { kilocode: ['  key1  ', '', 'key2'] },
+        providers: {},
+      }
+      const normalized = normalizeConfigShape(config)
+      assert.deepEqual(normalized.apiKeys.kilocode, ['key1', 'key2'])
+    })
+
+    it('preserves string apiKeys unchanged', () => {
+      const config = {
+        apiKeys: { nvidia: '  nv-key  ' },
+        providers: {},
+      }
+      const normalized = normalizeConfigShape(config)
+      assert.equal(normalized.apiKeys.nvidia, 'nv-key')
+    })
+
+    it('handles mixed string and array apiKeys', () => {
+      const config = {
+        apiKeys: { nvidia: 'nv-key', kilocode: ['key1', 'key2'] },
+        providers: {},
+      }
+      const normalized = normalizeConfigShape(config)
+      assert.equal(normalized.apiKeys.nvidia, 'nv-key')
+      assert.deepEqual(normalized.apiKeys.kilocode, ['key1', 'key2'])
+    })
+
+    it('round-trips through export/import with array keys', () => {
+      const config = {
+        apiKeys: { kilocode: ['key1', 'key2'], nvidia: 'nv-key' },
+        providers: { kilocode: { enabled: true } },
+      }
+      const token = exportConfigToken(config)
+      const imported = importConfigToken(token)
+      assert.deepEqual(imported.apiKeys.kilocode, ['key1', 'key2'])
+      assert.equal(imported.apiKeys.nvidia, 'nv-key')
+    })
+  })
+
+  describe('getAccountStatus', () => {
+    it('returns empty when pool state is not initialized', () => {
+      const result = getAccountStatus({ apiKeys: { kilocode: ['k1', 'k2'] } })
+      assert.deepEqual(result, { providers: {} })
+    })
   })
 })
