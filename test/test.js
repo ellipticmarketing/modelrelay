@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test'
+import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -28,6 +28,24 @@ import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeO
 import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, getAccountStatus, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
+
+let tempConfigFile
+
+beforeEach(() => {
+  tempConfigFile = join(mkdtempSync(join(tmpdir(), 'modelrelay-test-')), 'config.json')
+  process.env.MODELRELAY_CONFIG = tempConfigFile
+})
+
+afterEach(() => {
+  if (tempConfigFile && existsSync(tempConfigFile)) {
+    rmSync(tempConfigFile, { force: true })
+  }
+  const configDir = tempConfigFile ? dirname(tempConfigFile) : null
+  if (configDir && existsSync(configDir)) {
+    rmSync(configDir, { recursive: true, force: true })
+  }
+  delete process.env.MODELRELAY_CONFIG
+})
 
 function mockResult(overrides = {}) {
   return {

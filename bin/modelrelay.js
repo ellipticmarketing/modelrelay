@@ -5,7 +5,8 @@
  */
 
 import { parseArgs } from '../lib/utils.js'
-import { loadConfig, saveConfig, exportConfigToken, importConfigToken } from '../lib/config.js'
+import { loadConfig, saveConfig, exportConfigToken, importConfigToken, getApiKeyPool } from '../lib/config.js'
+import readline from 'readline'
 import { runOnboard } from '../lib/onboard.js'
 import { getAutostartStatus, installAutostart, startAutostart, uninstallAutostart } from '../lib/autostart.js'
 import { getPreferredLanIpv4Address } from '../lib/network.js'
@@ -59,6 +60,19 @@ async function readStdin() {
     chunks.push(chunk)
   }
   return Buffer.concat(chunks.map(c => Buffer.isBuffer(c) ? c : Buffer.from(c))).toString('utf8')
+}
+
+function promptConfirmation(message) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    })
+    rl.question(message, (answer) => {
+      rl.close()
+      resolve(answer.toLowerCase().trim() === 'y')
+    })
+  })
 }
 
 function runAutoUpdateAction(action, intervalHours) {
@@ -143,6 +157,10 @@ function runAutostartAction(action) {
 
 async function main() {
   const cliArgs = parseArgs(process.argv)
+
+  if (cliArgs.configPath) {
+    process.env.MODELRELAY_CONFIG = cliArgs.configPath
+  }
 
   if (cliArgs.help) {
     printHelp()
@@ -244,7 +262,31 @@ async function main() {
       }
       const config = loadConfig()
       if (!config.apiKeys) config.apiKeys = {}
-      config.apiKeys[provider] = keys.length === 1 ? keys[0] : keys
+      const oldValue = config.apiKeys[provider]
+      const oldCount = Array.isArray(oldValue) ? oldValue.length : (oldValue ? 1 : 0)
+      const newValue = keys.length === 1 ? keys[0] : keys
+      const newCount = keys.length
+
+      if (cliArgs.dryRun) {
+        console.log(chalk.yellow('Dry run: would change apiKeys.' + provider))
+        console.log(`  Old: ${oldCount === 0 ? '(none)' : (Array.isArray(oldValue) ? oldValue.length + ' keys' : '1 key')}`)
+        console.log(`  New: ${newCount} key${newCount !== 1 ? 's' : ''}`)
+        console.log(chalk.green('Dry run complete. No changes made.'))
+        process.exit(0)
+      }
+
+      const needsConfirmation = !cliArgs.yes && (oldCount > 0)
+      if (needsConfirmation) {
+        const confirmed = await promptConfirmation(
+          `This will overwrite apiKeys.${provider} (currently ${oldCount} key${oldCount !== 1 ? 's' : ''}) with ${newCount} key${newCount !== 1 ? 's' : ''}. Continue? [y/N] `
+        )
+        if (!confirmed) {
+          console.log('Aborted.')
+          process.exit(1)
+        }
+      }
+
+      config.apiKeys[provider] = newValue
       saveConfig(config)
       if (keys.length === 1) {
         console.log(chalk.green(`✔ Set key for ${provider}: ${keys[0].slice(0, 4)}...`))
@@ -265,20 +307,75 @@ async function main() {
       const config = loadConfig()
       if (!config.apiKeys) config.apiKeys = {}
       const existing = config.apiKeys[provider]
+      const oldCount = Array.isArray(existing) ? existing.length : (existing ? 1 : 0)
+
       if (Array.isArray(existing)) {
         if (existing.includes(key)) {
           console.log(chalk.yellow(`Key already exists in pool for ${provider}.`))
-        } else {
-          existing.push(key)
-          config.apiKeys[provider] = existing
-          saveConfig(config)
-          console.log(chalk.green(`✔ Added key to ${provider} (now ${existing.length} keys)`))
+          return
         }
+        const newCount = existing.length + 1
+        if (cliArgs.dryRun) {
+          console.log(chalk.yellow('Dry run: would add key to apiKeys.' + provider))
+          console.log(`  Old: ${oldCount} key${oldCount !== 1 ? 's' : ''}`)
+          console.log(`  New: ${newCount} keys`)
+          console.log(chalk.green('Dry run complete. No changes made.'))
+          process.exit(0)
+        }
+        const needsConfirmation = !cliArgs.yes
+        if (needsConfirmation) {
+          const confirmed = await promptConfirmation(
+            `This will add a key to apiKeys.${provider} (currently ${oldCount} key${oldCount !== 1 ? 's' : ''}, will become ${newCount} keys). Continue? [y/N] `
+          )
+          if (!confirmed) {
+            console.log('Aborted.')
+            process.exit(1)
+          }
+        }
+        existing.push(key)
+        config.apiKeys[provider] = existing
+        saveConfig(config)
+        console.log(chalk.green(`✔ Added key to ${provider} (now ${existing.length} keys)`))
       } else if (typeof existing === 'string' && existing) {
+        const newCount = 2
+        if (cliArgs.dryRun) {
+          console.log(chalk.yellow('Dry run: would convert single key to array in apiKeys.' + provider))
+          console.log(`  Old: 1 key`)
+          console.log(`  New: ${newCount} keys (round-robin enabled)`)
+          console.log(chalk.green('Dry run complete. No changes made.'))
+          process.exit(0)
+        }
+        const needsConfirmation = !cliArgs.yes
+        if (needsConfirmation) {
+          const confirmed = await promptConfirmation(
+            `This will add a second key to apiKeys.${provider} (currently 1 key, will enable round-robin with 2 keys). Continue? [y/N] `
+          )
+          if (!confirmed) {
+            console.log('Aborted.')
+            process.exit(1)
+          }
+        }
         config.apiKeys[provider] = [existing, key]
         saveConfig(config)
         console.log(chalk.green(`✔ Added second key to ${provider} (now 2 keys, round-robin enabled)`))
       } else {
+        if (cliArgs.dryRun) {
+          console.log(chalk.yellow('Dry run: would set apiKeys.' + provider))
+          console.log(`  Old: (none)`)
+          console.log(`  New: 1 key`)
+          console.log(chalk.green('Dry run complete. No changes made.'))
+          process.exit(0)
+        }
+        const needsConfirmation = !cliArgs.yes
+        if (needsConfirmation) {
+          const confirmed = await promptConfirmation(
+            `This will set apiKeys.${provider} to 1 key. Continue? [y/N] `
+          )
+          if (!confirmed) {
+            console.log('Aborted.')
+            process.exit(1)
+          }
+        }
         config.apiKeys[provider] = key
         saveConfig(config)
         console.log(chalk.green(`✔ Set single key for ${provider}`))
@@ -299,7 +396,25 @@ async function main() {
         process.exit(1)
       }
       const existing = config.apiKeys[provider]
+      const oldCount = Array.isArray(existing) ? existing.length : 1
       if (!Array.isArray(existing)) {
+        if (cliArgs.dryRun) {
+          console.log(chalk.yellow('Dry run: would remove apiKeys.' + provider))
+          console.log(`  Old: 1 key`)
+          console.log(`  New: (none)`)
+          console.log(chalk.green('Dry run complete. No changes made.'))
+          process.exit(0)
+        }
+        const needsConfirmation = !cliArgs.yes
+        if (needsConfirmation) {
+          const confirmed = await promptConfirmation(
+            `This will remove apiKeys.${provider} (currently 1 key). Continue? [y/N] `
+          )
+          if (!confirmed) {
+            console.log('Aborted.')
+            process.exit(1)
+          }
+        }
         delete config.apiKeys[provider]
         saveConfig(config)
         console.log(chalk.green(`✔ Removed single key for ${provider}.`))
@@ -307,6 +422,24 @@ async function main() {
       }
       const idx = Number(keyOrIndex)
       if (!isNaN(idx) && idx >= 0 && idx < existing.length) {
+        const newCount = existing.length - 1
+        if (cliArgs.dryRun) {
+          console.log(chalk.yellow('Dry run: would remove key [' + idx + '] from apiKeys.' + provider))
+          console.log(`  Old: ${oldCount} keys`)
+          console.log(`  New: ${newCount} key${newCount !== 1 ? 's' : ''}`)
+          console.log(chalk.green('Dry run complete. No changes made.'))
+          process.exit(0)
+        }
+        const needsConfirmation = !cliArgs.yes
+        if (needsConfirmation) {
+          const confirmed = await promptConfirmation(
+            `This will remove key [${idx}] from apiKeys.${provider} (currently ${oldCount} keys, will have ${newCount} remaining). Continue? [y/N] `
+          )
+          if (!confirmed) {
+            console.log('Aborted.')
+            process.exit(1)
+          }
+        }
         const removed = existing.splice(idx, 1)[0]
         if (existing.length === 0) {
           delete config.apiKeys[provider]
@@ -320,6 +453,24 @@ async function main() {
       } else {
         const idx2 = existing.indexOf(keyOrIndex)
         if (idx2 !== -1) {
+          const newCount = existing.length - 1
+          if (cliArgs.dryRun) {
+            console.log(chalk.yellow('Dry run: would remove key from apiKeys.' + provider))
+            console.log(`  Old: ${oldCount} keys`)
+            console.log(`  New: ${newCount} key${newCount !== 1 ? 's' : ''}`)
+            console.log(chalk.green('Dry run complete. No changes made.'))
+            process.exit(0)
+          }
+          const needsConfirmation = !cliArgs.yes
+          if (needsConfirmation) {
+            const confirmed = await promptConfirmation(
+              `This will remove key ${keyOrIndex.slice(0, 4)}... from apiKeys.${provider} (currently ${oldCount} keys, will have ${newCount} remaining). Continue? [y/N] `
+            )
+            if (!confirmed) {
+              console.log('Aborted.')
+              process.exit(1)
+            }
+          }
           existing.splice(idx2, 1)
           if (existing.length === 0) {
             delete config.apiKeys[provider]
@@ -353,6 +504,29 @@ async function main() {
       const config = loadConfig()
       if (!config.providers) config.providers = {}
       if (!config.providers[provider]) config.providers[provider] = {}
+      const oldMaxTurns = config.providers[provider].maxTurns
+      const oldMaxTurnsDisplay = oldMaxTurns === undefined || oldMaxTurns === 0 ? 'unlimited' : oldMaxTurns
+      const newMaxTurnsDisplay = maxTurns === 0 ? 'unlimited' : maxTurns
+
+      if (cliArgs.dryRun) {
+        console.log(chalk.yellow('Dry run: would change providers.' + provider + '.maxTurns'))
+        console.log(`  Old: ${oldMaxTurnsDisplay}`)
+        console.log(`  New: ${newMaxTurnsDisplay}`)
+        console.log(chalk.green('Dry run complete. No changes made.'))
+        process.exit(0)
+      }
+
+      const needsConfirmation = !cliArgs.yes && oldMaxTurns !== undefined
+      if (needsConfirmation) {
+        const confirmed = await promptConfirmation(
+          `This will change providers.${provider}.maxTurns from ${oldMaxTurnsDisplay} to ${newMaxTurnsDisplay}. Continue? [y/N] `
+        )
+        if (!confirmed) {
+          console.log('Aborted.')
+          process.exit(1)
+        }
+      }
+
       if (maxTurns === 0) {
         delete config.providers[provider].maxTurns
         saveConfig(config)
