@@ -1469,6 +1469,7 @@
       <div class="tab active" id="tab-models" onclick="switchTab('models')">Live Telemetry</div>
       <div class="tab" id="tab-chat" onclick="switchTab('chat')">Chat</div>
       <div class="tab" id="tab-logs" onclick="switchTab('logs')">Request Logs</div>
+      <div class="tab" id="tab-status" onclick="switchTab('status')">Account Status</div>
       <div class="tab" id="tab-settings" onclick="switchTab('settings')">Settings</div>
       <div class="tab" id="tab-setup" onclick="switchTab('setup')">Setup Instructions</div>
     </div>
@@ -1661,6 +1662,20 @@
       </div>
     </div>
 
+    <div id="status-view" style="display: none;">
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">Account Status</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button onclick="loadAccountStatus()" class="btn" style="background:white; color:var(--text); border:1px solid var(--border);">Refresh</button>
+          </div>
+        </div>
+        <div id="account-status-body">
+          <div style="padding:32px; text-align:center; color:var(--text-muted);">Loading account status...</div>
+        </div>
+      </div>
+    </div>
+
     <div id="chat-view" style="display: none;">
       <div class="chat-layout">
         <div class="chat-toolbar">
@@ -1830,6 +1845,7 @@
       document.getElementById('models-view').style.display = tab === 'models' ? 'block' : 'none';
       document.getElementById('chat-view').style.display = tab === 'chat' ? 'block' : 'none';
       document.getElementById('logs-view').style.display = tab === 'logs' ? 'block' : 'none';
+      document.getElementById('status-view').style.display = tab === 'status' ? 'block' : 'none';
       document.getElementById('settings-view').style.display = tab === 'settings' ? 'block' : 'none';
       document.getElementById('setup-view').style.display = tab === 'setup' ? 'block' : 'none';
 
@@ -1840,6 +1856,8 @@
       } else if (tab === 'chat') {
         renderChatTranscript();
         scrollChatToBottom();
+      } else if (tab === 'status') {
+        loadAccountStatus();
       }
     }
 
@@ -3259,6 +3277,33 @@
               <input type="number" id="ping-interval-${p.key}" min="1" step="1" value="${p.pingIntervalMinutes || ''}" placeholder="30" style="width:70px; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem;" onchange="updateProviderPingInterval('${p.key}')">
               <span style="font-size:0.75rem; color:var(--text-muted);">(default: 30)</span>
             </div>
+            ${p.hasMultipleKeys ? `
+            <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border:1px solid var(--border); border-radius:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.8rem; font-weight:700; color:var(--text);">Accounts (${p.apiKeyPool.length})</span>
+                <span style="font-size:0.7rem; color:var(--text-muted);">Round-robin active</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
+                ${p.apiKeyPool.map((acct, i) => `
+                  <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:white; border:1px solid #e5e7eb; border-radius:6px; font-size:0.78rem;">
+                    <span style="font-weight:700; color:var(--text-muted); min-width:20px;">[${i}]</span>
+                    <span style="font-family:monospace; color:var(--text); flex:1;">${escapeHtml(acct.masked)}</span>
+                    <span id="acct-status-${p.key}-${i}" style="font-size:0.7rem;"></span>
+                    <button onclick="removeAccountKey('${p.key}', ${i})" style="border:1px solid #fecaca; background:#fff1f2; color:#b91c1c; cursor:pointer; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">Remove</button>
+                  </div>
+                `).join('')}
+              </div>
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+                <input type="password" id="new-key-${p.key}" placeholder="Add new account key..." style="flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem;">
+                <button onclick="addAccountKey('${p.key}')" style="border:1px solid #bbf7d0; background:#ecfdf5; color:#065f46; cursor:pointer; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Add Account</button>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Max turns per account:</span>
+                <input type="number" id="maxturns-${p.key}" min="0" step="1" value="${p.maxTurns || 0}" style="width:70px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem;" onchange="updateProviderMaxTurns('${p.key}')">
+                <span style="font-size:0.72rem; color:var(--text-muted);">0 = unlimited</span>
+              </div>
+            </div>
+            ` : ''}
             ${optionalBearerAuthHtml}
             ${openAiCompatibleFieldsHtml}
             ${qwenAuthActionsHtml}
@@ -3341,6 +3386,149 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ providerKey: key, pingIntervalMinutes })
       });
+    }
+
+    async function addAccountKey(providerKey) {
+      const input = document.getElementById(`new-key-${providerKey}`);
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) return;
+      try {
+        const res = await fetch('/api/config');
+        const providers = await res.json();
+        const p = providers.find(pr => pr.key === providerKey);
+        if (!p) return;
+        let newPool;
+        if (Array.isArray(p.apiKeyPool) && p.apiKeyPool.length > 0) {
+          const existingKeys = p.apiKeyPool.map(a => a.key);
+          newPool = [...existingKeys, val];
+        } else {
+          newPool = [val];
+        }
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerKey, apiKeys: newPool })
+        });
+        input.value = '';
+        await loadSettings();
+        await loadAccountStatus();
+      } catch (err) { console.error(err); }
+    }
+
+    async function removeAccountKey(providerKey, index) {
+      try {
+        const res = await fetch('/api/config');
+        const providers = await res.json();
+        const p = providers.find(pr => pr.key === providerKey);
+        if (!p || !Array.isArray(p.apiKeyPool)) return;
+        const newPool = p.apiKeyPool.map(a => a.key).filter((_, i) => i !== index);
+        if (newPool.length === 0) {
+          await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ providerKey, apiKeys: [] })
+          });
+        } else {
+          await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ providerKey, apiKeys: newPool })
+          });
+        }
+        await loadSettings();
+        await loadAccountStatus();
+      } catch (err) { console.error(err); }
+    }
+
+    async function updateProviderMaxTurns(providerKey) {
+      const input = document.getElementById(`maxturns-${providerKey}`);
+      if (!input) return;
+      const val = input.value.trim();
+      const parsed = Math.floor(Number(val));
+      const maxTurns = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerKey, maxTurns })
+      });
+    }
+
+    async function loadAccountStatus() {
+      const body = document.getElementById('account-status-body');
+      if (!body) return;
+      body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--text-muted);">Loading account status...</div>';
+      try {
+        const [statusRes, configRes] = await Promise.all([
+          fetch('/api/account-status'),
+          fetch('/api/config')
+        ]);
+        const status = await statusRes.json();
+        const config = await configRes.json();
+        const providers = status.providers || {};
+        const providerNames = {};
+        for (const p of config) { providerNames[p.key] = p.name; }
+
+        const providerKeys = Object.keys(providers);
+        if (providerKeys.length === 0) {
+          body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--text-muted);">No multi-account providers configured.<br><br>Add multiple API keys to a provider to enable round-robin.</div>';
+          return;
+        }
+
+        let html = `<table style="width:100%;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Provider</th>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Account</th>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Status</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Requests</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Max Turns</th>
+              <th style="text-align:center; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Next</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        for (const [key, info] of Object.entries(providers)) {
+          const name = providerNames[key] || key;
+          const maxTurns = info.maxTurns || 0;
+          for (const acct of info.accounts) {
+            const isRateLimited = acct.rateLimited;
+            const hitMaxTurns = maxTurns > 0 && acct.requests >= maxTurns;
+            let statusIcon = '🟢';
+            let statusColor = '#065f46';
+            let statusBg = '#ecfdf5';
+            let statusText = 'Active';
+            if (isRateLimited) {
+              statusIcon = '🔴';
+              statusColor = '#7f1d1d';
+              statusBg = '#fef2f2';
+              statusText = 'Rate Limited';
+            } else if (hitMaxTurns) {
+              statusIcon = '🟡';
+              statusColor = '#92400e';
+              statusBg = '#fffbeb';
+              statusText = 'Cooling';
+            }
+            const isNext = acct.index === info.currentIdx;
+            html += `<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:14px 24px; font-size:0.875rem; font-weight:600;">${escapeHtml(name)}</td>
+              <td style="padding:14px 24px; font-size:0.875rem;">
+                <span style="font-family:monospace; background:#f3f2f1; padding:2px 6px; border-radius:4px; font-size:0.78rem;">[${acct.index}] ${escapeHtml(acct.masked)}</span>
+              </td>
+              <td style="padding:14px 24px;">
+                <span style="background:${statusBg}; color:${statusColor}; border-radius:999px; padding:2px 10px; font-size:0.72rem; font-weight:700;">${statusIcon} ${statusText}</span>
+              </td>
+              <td style="padding:14px 24px; text-align:right; font-size:0.875rem; font-weight:600; font-variant-numeric:tabular-nums;">${acct.requests}</td>
+              <td style="padding:14px 24px; text-align:right; font-size:0.875rem; color:var(--text-muted);">${maxTurns > 0 ? maxTurns : 'unlimited'}</td>
+              <td style="padding:14px 24px; text-align:center; font-size:1.1rem;">${isNext ? '→' : ''}</td>
+            </tr>`;
+          }
+        }
+        html += '</tbody></table>';
+        body.innerHTML = html;
+      } catch (err) {
+        body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--error);">Failed to load account status.</div>';
+      }
     }
 
     async function updateProviderBearerAuth(key) {
