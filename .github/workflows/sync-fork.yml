@@ -1,0 +1,21 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Runs at 2 AM UTC every day
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the fork
+        uses: actions/checkout@v2
+
+      - name: Sync with upstream
+        run: |
+          git remote add upstream https://github.com/ellipticmarketing/modelrelay.git
+          git fetch upstream
+          git checkout master
+          git merge upstream/master
+          git push origin master
