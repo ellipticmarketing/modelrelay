@@ -1,21 +1,73 @@
 /**
  * @file sources.js
  * @description Model sources for AI availability checker.
+ * Merged from modelrelay + free-coding-models to support 174+ models across 23 providers.
  */
 
 import { scores } from './scores.js'
 
+export const MODEL_ID_ALIASES = {
+  'mimo-v2-omni-free': 'xiaomi/mimo-v2-omni:free',
+  'Qwen3-32B': 'qwen3-32b',
+  'mistralai/Mixtral-8x22B-Instruct-v0.1': 'mistralai/mixtral-8x22b-instruct-v0.1',
+  'moonshotai/Kimi-K2-Instruct': 'moonshotai/kimi-k2-instruct',
+  'Qwen/Qwen3-235B-A22B': 'qwen/qwen3-235b-a22b',
+  'Qwen/Qwen2.5-Coder-32B-Instruct': 'qwen/qwen2.5-coder-32b-instruct',
+  'meta-llama/Llama-3.3-70B-Instruct': 'meta-llama/llama-3.3-70b-instruct',
+  'zai/glm-4.5-air': 'z-ai/glm-4.5-air',
+  'Qwen/Qwen3-Coder-480B-A35B-Instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
+  'deepseek-ai/DeepSeek-V3.2': 'deepseek-ai/deepseek-v3.2',
+  'deepseek-ai/DeepSeek-R1': 'deepseek-ai/deepseek-r1',
+  'Qwen/Qwen3-Coder-30B-A3B-Instruct': 'qwen/qwen3-coder-30b-a3b-instruct',
+  'moonshotai/Kimi-K2.5': 'moonshotai/kimi-k2.5',
+  'deepseek-ai/DeepSeek-V3.1': 'deepseek-ai/deepseek-v3.1',
+  'meta-llama/Llama-3.3-70B-Instruct-Turbo': 'meta-llama/llama-3.3-70b-instruct',
+  '@cf/qwen/qwen2.5-coder-32b-instruct': 'qwen/qwen2.5-coder-32b-instruct',
+  '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': 'deepseek-ai/deepseek-r1-distill-qwen-32b',
+  '@cf/openai/gpt-oss-20b': 'openai/gpt-oss-20b',
+  'TBStars2-200B-A13B': 'tbstars2-200b-a13b',
+}
+
+export const MODEL_LABEL_OVERRIDES = {
+  'mimo-v2-omni-free': 'MiMo V2 Omni',
+  'xiaomi/mimo-v2-omni:free': 'MiMo V2 Omni',
+  'xiaomi/mimo-v2-pro:free': 'MiMo V2 Omni Pro',
+  'x-ai/grok-code-fast-1:optimized:free': 'Grok Code Fast',
+}
+
+export function resolveAliasedModelId(modelId) {
+  const raw = typeof modelId === 'string' ? modelId.trim() : ''
+  if (!raw) return ''
+  return MODEL_ID_ALIASES[raw] || raw
+}
+
+export function cleanModelDisplayLabel(label) {
+  if (typeof label !== 'string') return ''
+  return label
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\s+\(free\)\s*$/i, '')
+    .replace(/\s+free\s*$/i, '')
+    .trim()
+}
+
 export function canonicalizeModelId(modelId) {
-  // 1. Remove suffix like :free
-  const base = modelId.replace(/:[a-z0-9-]+$/i, '');
-  // 2. Remove provider prefix like google/
+  const resolved = resolveAliasedModelId(modelId)
+  const base = resolved.replace(/(?::[a-z0-9-]+)+$/i, '');
   const unprefixed = base.includes('/') ? base.split('/').pop() : base;
   return { base, unprefixed };
 }
 
+export function getPreferredModelLabel(modelId, fallback = null) {
+  const resolved = resolveAliasedModelId(modelId)
+  const override = MODEL_LABEL_OVERRIDES[modelId] || MODEL_LABEL_OVERRIDES[resolved]
+  if (override) return override
+  const cleanedFallback = cleanModelDisplayLabel(fallback)
+  return cleanedFallback || fallback
+}
+
 export function getScore(modelId) {
   const { base, unprefixed } = canonicalizeModelId(modelId);
-  // Try exact match first (e.g. google/gemma-3-4b-it), then fallback to unprefixed (e.g. gemma-3-4b-it)
   return scores[base] ?? scores[unprefixed] ?? null;
 }
 
@@ -96,24 +148,73 @@ export const sources = {
       ["gpt-oss-120b", "GPT OSS 120B", "128k"],
       ["qwen-3-235b-a22b", "Qwen3 235B", "128k"],
       ["llama3.1-8b", "Llama 3.1 8B", "128k"],
-      ["glm-4.6", "GLM 4.6", "128k"]
+      ["zai-glm-4.7", "GLM 4.7", "200k"]
+    ]
+  },
+  "sambanova": {
+    "name": "SambaNova",
+    "url": "https://api.sambanova.ai/v1/chat/completions",
+    "models": [
+      ["MiniMax-M2.5", "MiniMax M2.5", "160k"],
+      ["DeepSeek-R1-0528", "DeepSeek R1 0528", "128k"],
+      ["DeepSeek-V3.1", "DeepSeek V3.1", "128k"],
+      ["DeepSeek-V3-0324", "DeepSeek V3 0324", "128k"],
+      ["DeepSeek-V3.2", "DeepSeek V3.2", "8k"],
+      ["Llama-4-Maverick-17B-128E-Instruct", "Llama 4 Maverick", "1M"],
+      ["gpt-oss-120b", "GPT OSS 120B", "128k"],
+      ["DeepSeek-V3.1-Terminus", "DeepSeek V3.1 Terminus", "128k"],
+      ["Qwen3-32B", "Qwen3 32B", "128k"],
+      ["DeepSeek-R1-Distill-Llama-70B", "R1 Distill 70B", "128k"],
+      ["Meta-Llama-3.3-70B-Instruct", "Llama 3.3 70B", "128k"],
+      ["Meta-Llama-3.1-8B-Instruct", "Llama 3.1 8B", "128k"]
     ]
   },
   "openrouter": {
     "name": "OpenRouter",
     "url": "https://openrouter.ai/api/v1/chat/completions",
     "models": [
-      ["qwen/qwen3-coder:free", "Qwen3 Coder", "256k"],
+      ["qwen/qwen3-coder:free", "Qwen3 Coder 480B", "256k"],
+      ["z-ai/glm-4.5-air:free", "GLM 4.5 Air", "128k"],
+      ["google/gemma-3-27b-it:free", "Gemma 3 27B", "128k"],
       ["stepfun/step-3.5-flash:free", "Step 3.5 Flash", "256k"],
-      ["deepseek/deepseek-r1-0528:free", "DeepSeek R1 0528", "128k"],
       ["qwen/qwen3-next-80b-a3b-instruct:free", "Qwen3 80B Instruct", "128k"],
       ["openai/gpt-oss-120b:free", "GPT OSS 120B", "128k"],
       ["openai/gpt-oss-20b:free", "GPT OSS 20B", "128k"],
       ["nvidia/nemotron-3-nano-30b-a3b:free", "Nemotron Nano 30B", "128k"],
       ["meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B", "128k"],
-      ["minimax/minimax-m2.5:free", "MiniMax M2.5", "128k"],
-      ["corethink:free", "CoreThink", "128k"],
-      ["giga-potato-thinking:free", "Giga Potato Thinking", "128k"]
+      ["mistralai/mistral-small-3.1-24b-instruct:free", "Mistral Small 3.1", "128k"],
+      ["google/gemma-3-12b-it:free", "Gemma 3 12B", "128k"]
+    ]
+  },
+  "huggingface": {
+    "name": "Hugging Face",
+    "url": "https://router.huggingface.co/v1/chat/completions",
+    "models": [
+      ["deepseek-ai/DeepSeek-V3-Coder", "DeepSeek V3 Coder", "128k"],
+      ["bigcode/starcoder2-15b", "StarCoder2 15B", "16k"]
+    ]
+  },
+  "replicate": {
+    "name": "Replicate",
+    "url": "https://api.replicate.com/v1/predictions",
+    "models": [
+      ["codellama/CodeLlama-70b-Instruct-hf", "CodeLlama 70B", "16k"]
+    ]
+  },
+  "deepinfra": {
+    "name": "DeepInfra",
+    "url": "https://api.deepinfra.com/v1/openai/chat/completions",
+    "models": [
+      ["mistralai/Mixtral-8x22B-Instruct-v0.1", "Mixtral Code", "64k"],
+      ["meta-llama/Meta-Llama-3.1-70B-Instruct", "Llama 3.1 70B", "128k"]
+    ]
+  },
+  "fireworks": {
+    "name": "Fireworks",
+    "url": "https://api.fireworks.ai/inference/v1/chat/completions",
+    "models": [
+      ["accounts/fireworks/models/deepseek-v3", "DeepSeek V3", "128k"],
+      ["accounts/fireworks/models/deepseek-r1", "DeepSeek R1", "128k"]
     ]
   },
   "codestral": {
@@ -121,6 +222,22 @@ export const sources = {
     "url": "https://codestral.mistral.ai/v1/chat/completions",
     "models": [
       ["codestral-latest", "Codestral", "256k"]
+    ]
+  },
+  "hyperbolic": {
+    "name": "Hyperbolic",
+    "url": "https://api.hyperbolic.xyz/v1/chat/completions",
+    "models": [
+      ["qwen/qwen3-coder-480b-a35b-instruct", "Qwen3 Coder 480B", "256k"],
+      ["deepseek-ai/DeepSeek-R1-0528", "DeepSeek R1 0528", "128k"],
+      ["moonshotai/Kimi-K2-Instruct", "Kimi K2 Instruct", "131k"],
+      ["openai/gpt-oss-120b", "GPT OSS 120B", "128k"],
+      ["Qwen/Qwen3-235B-A22B", "Qwen3 235B", "128k"],
+      ["qwen/qwen3-next-80b-a3b-instruct", "Qwen3 80B Instruct", "128k"],
+      ["deepseek-ai/DeepSeek-V3-0324", "DeepSeek V3 0324", "128k"],
+      ["Qwen/Qwen2.5-Coder-32B-Instruct", "Qwen2.5 Coder 32B", "32k"],
+      ["meta-llama/Llama-3.3-70B-Instruct", "Llama 3.3 70B", "128k"],
+      ["meta-llama/Meta-Llama-3.1-405B-Instruct", "Llama 3.1 405B", "128k"]
     ]
   },
   "scaleway": {
@@ -136,6 +253,116 @@ export const sources = {
       ["mistral-small-3.2-24b-instruct-2506", "Mistral Small 3.2", "128k"]
     ]
   },
+  "googleai": {
+    "name": "Google AI",
+    "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    "models": [
+      ["gemma-3-27b-it", "Gemma 3 27B", "128k"],
+      ["gemma-3-12b-it", "Gemma 3 12B", "128k"],
+      ["gemma-3-4b-it", "Gemma 3 4B", "128k"]
+    ]
+  },
+  "zai": {
+    "name": "ZAI",
+    "url": "https://api.z.ai/api/coding/paas/v4/chat/completions",
+    "models": [
+      ["zai/glm-5", "GLM-5", "128k"],
+      ["zai/glm-4.7", "GLM-4.7", "200k"],
+      ["zai/glm-4.7-flash", "GLM-4.7-Flash", "200k"],
+      ["zai/glm-4.5", "GLM-4.5", "128k"],
+      ["zai/glm-4.5-air", "GLM-4.5-Air", "128k"],
+      ["zai/glm-4.5-flash", "GLM-4.5-Flash", "128k"],
+      ["zai/glm-4.6", "GLM-4.6", "128k"]
+    ]
+  },
+  "siliconflow": {
+    "name": "SiliconFlow",
+    "url": "https://api.siliconflow.com/v1/chat/completions",
+    "models": [
+      ["Qwen/Qwen3-Coder-480B-A35B-Instruct", "Qwen3 Coder 480B", "256k"],
+      ["deepseek-ai/DeepSeek-V3.2", "DeepSeek V3.2", "128k"],
+      ["Qwen/Qwen3-235B-A22B", "Qwen3 235B", "128k"],
+      ["deepseek-ai/DeepSeek-R1", "DeepSeek R1", "128k"],
+      ["Qwen/Qwen3-Coder-30B-A3B-Instruct", "Qwen3 Coder 30B", "32k"],
+      ["Qwen/Qwen2.5-Coder-32B-Instruct", "Qwen2.5 Coder 32B", "32k"]
+    ]
+  },
+  "together": {
+    "name": "Together AI",
+    "url": "https://api.together.xyz/v1/chat/completions",
+    "models": [
+      ["moonshotai/Kimi-K2.5", "Kimi K2.5", "128k"],
+      ["Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8", "Qwen3 Coder 480B", "256k"],
+      ["deepseek-ai/DeepSeek-V3.1", "DeepSeek V3.1", "128k"],
+      ["deepseek-ai/DeepSeek-R1", "DeepSeek R1", "128k"],
+      ["openai/gpt-oss-120b", "GPT OSS 120B", "128k"],
+      ["openai/gpt-oss-20b", "GPT OSS 20B", "128k"],
+      ["meta-llama/Llama-3.3-70B-Instruct-Turbo", "Llama 3.3 70B", "128k"]
+    ]
+  },
+  "cloudflare": {
+    "name": "Cloudflare AI",
+    "url": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions",
+    "models": [
+      ["@cf/openai/gpt-oss-120b", "GPT OSS 120B", "128k"],
+      ["@cf/qwen/qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", "32k"],
+      ["@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", "R1 Distill 32B", "128k"],
+      ["@cf/openai/gpt-oss-20b", "GPT OSS 20B", "128k"],
+      ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "Llama 3.3 70B", "128k"],
+      ["@cf/meta/llama-3.1-8b-instruct", "Llama 3.1 8B", "128k"]
+    ]
+  },
+  "perplexity": {
+    "name": "Perplexity",
+    "url": "https://api.perplexity.ai/chat/completions",
+    "models": [
+      ["sonar-reasoning-pro", "Sonar Reasoning Pro", "128k"],
+      ["sonar-reasoning", "Sonar Reasoning", "128k"],
+      ["sonar-pro", "Sonar Pro", "128k"],
+      ["sonar", "Sonar", "128k"]
+    ]
+  },
+  "qwen": {
+    "name": "Alibaba Cloud",
+    "url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+    "models": [
+      ["qwen3-coder-plus", "Qwen3 Coder Plus", "256k"],
+      ["qwen3-coder-480b-a35b-instruct", "Qwen3 Coder 480B", "256k"],
+      ["qwen3-coder-max", "Qwen3 Coder Max", "256k"],
+      ["qwen3-coder-next", "Qwen3 Coder Next", "256k"],
+      ["qwen3-235b-a22b-instruct", "Qwen3 235B", "256k"],
+      ["qwen3-next-80b-a3b-instruct", "Qwen3 80B Instruct", "128k"],
+      ["qwen3-32b", "Qwen3 32B", "128k"],
+      ["qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", "32k"]
+    ]
+  },
+  "iflow": {
+    "name": "iFlow",
+    "url": "https://apis.iflow.cn/v1/chat/completions",
+    "models": [
+      ["TBStars2-200B-A13B", "TBStars2 200B", "128k"],
+      ["deepseek-v3.2", "DeepSeek V3.2", "128k"],
+      ["qwen3-coder-plus", "Qwen3 Coder Plus", "256k"],
+      ["qwen3-235b-a22b-instruct", "Qwen3 235B", "256k"],
+      ["deepseek-r1", "DeepSeek R1", "128k"],
+      ["kimi-k2", "Kimi K2", "128k"],
+      ["kimi-k2-0905", "Kimi K2 0905", "256k"],
+      ["glm-4.6", "GLM 4.6", "200k"],
+      ["deepseek-v3", "DeepSeek V3", "128k"],
+      ["qwen3-32b", "Qwen3 32B", "128k"],
+      ["qwen3-max", "Qwen3 Max", "256k"]
+    ]
+  },
+  "opencode": {
+    "name": "OpenCode Zen",
+    "url": "https://opencode.ai/zen/v1/chat/completions",
+    "models": []
+  },
+  "openai-compatible": {
+    "name": "OpenAI-Compatible",
+    "url": "",
+    "models": []
+  },
   "qwencode": {
     "name": "Qwen Code",
     "url": "https://coding.dashscope.aliyuncs.com/v1/chat/completions",
@@ -149,15 +376,6 @@ export const sources = {
     "url": "https://api.kilo.ai/api/gateway/chat/completions",
     "models": [
       ["arcee-ai/trinity-large-preview", "Trinity Large", "128k"]
-    ]
-  },
-  "googleai": {
-    "name": "Google AI",
-    "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-    "models": [
-      ["gemma-3-27b-it", "Gemma 3 27B", "128k"],
-      ["gemma-3-12b-it", "Gemma 3 12B", "128k"],
-      ["gemma-3-4b-it", "Gemma 3 4B", "128k"]
     ]
   }
 }

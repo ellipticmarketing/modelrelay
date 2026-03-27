@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 
-import { sources, MODELS } from '../sources.js'
+import { sources, MODELS, canonicalizeModelId, getPreferredModelLabel } from '../sources.js'
 import {
   getAvg,
   getVerdict,
@@ -22,12 +22,10 @@ import {
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
-import { exportConfigToken, getApiKey, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
+import { exportConfigToken, getApiKey, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
-import { toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
-import { canonicalizeModelId } from '../sources.js'
-
+import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -119,6 +117,18 @@ describe('sources data integrity', () => {
     assert.ok(sources.qwencode.models.length > 0)
   })
 
+  it('includes OpenAI-compatible provider', () => {
+    assert.ok(sources['openai-compatible'])
+    assert.equal(sources['openai-compatible'].name, 'OpenAI-Compatible')
+    assert.ok(Array.isArray(sources['openai-compatible'].models))
+  })
+
+  it('includes OpenCode Zen provider', () => {
+    assert.ok(sources.opencode)
+    assert.equal(sources.opencode.name, 'OpenCode Zen')
+    assert.ok(Array.isArray(sources.opencode.models))
+  })
+
   it('has expected provider structure', () => {
     for (const [providerKey, provider] of Object.entries(sources)) {
       assert.equal(typeof providerKey, 'string')
@@ -205,6 +215,140 @@ describe('provider api key resolution', () => {
       else process.env.KILOCODE_API_KEY = original
     }
   })
+
+  it('supports OpenAI-compatible provider env vars for key, base URL, and model', () => {
+    const originalKey = process.env.OPENAI_COMPATIBLE_API_KEY
+    const originalBaseUrl = process.env.OPENAI_COMPATIBLE_BASE_URL
+    const originalModel = process.env.OPENAI_COMPATIBLE_MODEL
+
+    try {
+      delete process.env.OPENAI_COMPATIBLE_API_KEY
+      delete process.env.OPENAI_COMPATIBLE_BASE_URL
+      delete process.env.OPENAI_COMPATIBLE_MODEL
+
+      const config = {
+        apiKeys: { 'openai-compatible': 'config-key' },
+        providers: { 'openai-compatible': { baseUrl: 'https://example.test/v1', modelId: 'foo/bar' } },
+      }
+
+      assert.equal(getApiKey(config, 'openai-compatible'), 'config-key')
+      assert.equal(getProviderBaseUrl(config, 'openai-compatible'), 'https://example.test/v1')
+      assert.equal(getProviderModelId(config, 'openai-compatible'), 'foo/bar')
+
+      process.env.OPENAI_COMPATIBLE_API_KEY = 'env-key'
+      process.env.OPENAI_COMPATIBLE_BASE_URL = 'https://env.example/v1'
+      process.env.OPENAI_COMPATIBLE_MODEL = 'env/model'
+
+      assert.equal(getApiKey(config, 'openai-compatible'), 'env-key')
+      assert.equal(getProviderBaseUrl(config, 'openai-compatible'), 'https://env.example/v1')
+      assert.equal(getProviderModelId(config, 'openai-compatible'), 'env/model')
+    } finally {
+      if (originalKey == null) delete process.env.OPENAI_COMPATIBLE_API_KEY
+      else process.env.OPENAI_COMPATIBLE_API_KEY = originalKey
+
+      if (originalBaseUrl == null) delete process.env.OPENAI_COMPATIBLE_BASE_URL
+      else process.env.OPENAI_COMPATIBLE_BASE_URL = originalBaseUrl
+
+      if (originalModel == null) delete process.env.OPENAI_COMPATIBLE_MODEL
+      else process.env.OPENAI_COMPATIBLE_MODEL = originalModel
+    }
+  })
+
+  it('supports OpenCode provider env var override', () => {
+    const original = process.env.OPENCODE_API_KEY
+
+    try {
+      delete process.env.OPENCODE_API_KEY
+      assert.equal(getApiKey({ apiKeys: {} }, 'opencode'), null)
+
+      process.env.OPENCODE_API_KEY = 'opencode-env-key'
+      assert.equal(getApiKey({ apiKeys: {} }, 'opencode'), 'opencode-env-key')
+      assert.equal(getApiKey({ apiKeys: { opencode: 'file-key' } }, 'opencode'), 'opencode-env-key')
+    } finally {
+      if (original == null) delete process.env.OPENCODE_API_KEY
+      else process.env.OPENCODE_API_KEY = original
+    }
+  })
+
+  it('treats OpenCode and KiloCode auth as optional bearer auth providers', () => {
+    assert.equal(isProviderAuthOptional({}, 'opencode'), true)
+    assert.equal(isProviderAuthOptional({}, 'kilocode'), true)
+    assert.equal(isProviderAuthOptional({}, 'openrouter'), false)
+
+    assert.equal(isProviderBearerAuthEnabled({}, 'opencode'), true)
+    assert.equal(isProviderBearerAuthEnabled({}, 'kilocode'), true)
+    assert.equal(isProviderBearerAuthEnabled({ providers: { opencode: { useBearerAuth: false } } }, 'opencode'), false)
+    assert.equal(isProviderBearerAuthEnabled({ providers: { kilocode: { useBearerAuth: false } } }, 'kilocode'), false)
+
+    assert.equal(providerWantsBearerAuth({}, 'opencode'), true)
+    assert.equal(providerWantsBearerAuth({ providers: { opencode: { useBearerAuth: false } } }, 'opencode'), false)
+    assert.equal(providerWantsBearerAuth({ providers: { kilocode: { useBearerAuth: false } } }, 'kilocode'), false)
+    assert.equal(providerWantsBearerAuth({}, 'openrouter'), true)
+  })
+
+  it('builds stable OpenCode CLI headers for unauthenticated requests', () => {
+    assert.equal(buildOpencodeProjectId('C:/example/project'), buildOpencodeProjectId('C:/example/project'))
+    assert.match(buildOpencodeProjectId('C:/example/project'), /^[a-f0-9]{40}$/)
+
+    const headers = buildOpencodeHeaders({
+      projectSeed: 'C:/example/project',
+      sessionId: 'ses_test',
+      requestId: 'req_test',
+    })
+
+    assert.deepEqual(headers, {
+      'x-opencode-project': buildOpencodeProjectId('C:/example/project'),
+      'x-opencode-session': 'ses_test',
+      'x-opencode-request': 'req_test',
+      'x-opencode-client': 'cli',
+    })
+  })
+
+  it('adds OpenCode CLI headers to provider requests without requiring a bearer token', () => {
+    const headers = buildProviderRequestHeaders('opencode', {
+      projectSeed: 'C:/example/project',
+      sessionId: 'ses_test',
+      requestId: 'req_test',
+    })
+
+    assert.equal(headers['Content-Type'], 'application/json')
+    assert.equal(headers.Authorization, undefined)
+    assert.equal(headers['x-opencode-project'], buildOpencodeProjectId('C:/example/project'))
+    assert.equal(headers['x-opencode-session'], 'ses_test')
+    assert.equal(headers['x-opencode-request'], 'req_test')
+    assert.equal(headers['x-opencode-client'], 'cli')
+  })
+
+  it('retries optional providers with bearer auth when an unauthenticated probe is rejected', () => {
+    const config = {
+      apiKeys: { opencode: 'opencode-key' },
+      providers: { opencode: { useBearerAuth: false } },
+    }
+
+    assert.equal(
+      shouldRetryOptionalProviderWithBearer(config, 'opencode', { token: null }, '401', 'Missing API key.'),
+      true
+    )
+    assert.equal(
+      shouldRetryOptionalProviderWithBearer(config, 'opencode', { token: null }, '401', 'Unauthorized'),
+      true
+    )
+  })
+
+  it('does not retry optional providers with bearer auth when there is no fallback key or a token was already used', () => {
+    assert.equal(
+      shouldRetryOptionalProviderWithBearer({ apiKeys: {}, providers: { opencode: { useBearerAuth: false } } }, 'opencode', { token: null }, '401', 'Missing API key.'),
+      false
+    )
+    assert.equal(
+      shouldRetryOptionalProviderWithBearer({ apiKeys: { opencode: 'opencode-key' } }, 'opencode', { token: 'already-used' }, '401', 'Missing API key.'),
+      false
+    )
+    assert.equal(
+      shouldRetryOptionalProviderWithBearer({ apiKeys: { openrouter: 'openrouter-key' } }, 'openrouter', { token: null }, '401', 'Unauthorized'),
+      false
+    )
+  })
 })
 
 describe('dynamic model score resolution', () => {
@@ -230,6 +374,40 @@ describe('dynamic model score resolution', () => {
     assert.ok(model)
     assert.equal(model.intell, 0.25)
     assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('applies preferred labels to KiloCode dynamic models', () => {
+    const model = toKiloCodeModelMeta({
+      id: 'xiaomi/mimo-v2-omni:free',
+      display_name: 'xiaomi/mimo-v2-omni:free',
+    })
+
+    assert.ok(model)
+    assert.equal(model.label, 'MiMo V2 Omni')
+  })
+
+  it('uses aliased scores.js entries for OpenCode Zen chat models', () => {
+    const model = toOpenCodeModelMeta({
+      id: 'minimax-m2.5-free',
+    })
+
+    assert.ok(model)
+    assert.equal(model.label, 'MiniMax M2.5')
+    assert.equal(model.intell, 0.802)
+    assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('ignores OpenCode Zen models that are not chat-completions compatible', () => {
+    assert.equal(toOpenCodeModelMeta({ id: 'gpt-5.4' }), null)
+  })
+
+  it('applies preferred MiMo display labels', () => {
+    assert.equal(getPreferredModelLabel('mimo-v2-omni-free'), 'MiMo V2 Omni')
+    assert.equal(getPreferredModelLabel('xiaomi/mimo-v2-omni:free'), 'MiMo V2 Omni')
+    assert.equal(getPreferredModelLabel('xiaomi/mimo-v2-pro:free'), 'MiMo V2 Omni Pro')
+    assert.equal(getPreferredModelLabel('x-ai/grok-code-fast-1:optimized:free'), 'Grok Code Fast')
+    assert.equal(getPreferredModelLabel('minimax-m2.5-free', 'MiniMax M2.5 Free'), 'MiniMax M2.5')
+    assert.equal(getPreferredModelLabel('nemotron-3-super-free', 'Nemotron 3 Super Free'), 'Nemotron 3 Super')
   })
 })
 
@@ -796,6 +974,26 @@ describe('model grouping and filtering', () => {
     assert.equal(groups[0].id, 'minimax-m2.5')
   })
 
+  it('groups MiMo Omni aliases under one model name', () => {
+    const groups = buildModelGroups([
+      mockResult({ modelId: 'mimo-v2-omni-free', label: 'MiMo V2 Omni' }),
+      mockResult({ modelId: 'xiaomi/mimo-v2-omni:free', label: 'MiMo V2 Omni' }),
+      mockResult({ modelId: 'xiaomi/mimo-v2-pro:free', label: 'MiMo V2 Omni Pro' }),
+    ], canonicalizeModelId)
+
+    const omniGroup = groups.find(group => group.id === 'mimo-v2-omni')
+    assert.ok(omniGroup)
+    assert.equal(omniGroup.label, 'MiMo V2 Omni')
+    assert.equal(omniGroup.models.length, 2)
+    assert.ok(omniGroup.aliases.includes('mimo-v2-omni-free'))
+    assert.ok(omniGroup.aliases.includes('xiaomi/mimo-v2-omni:free'))
+
+    const proGroup = groups.find(group => group.id === 'mimo-v2-pro')
+    assert.ok(proGroup)
+    assert.equal(proGroup.label, 'MiMo V2 Omni Pro')
+    assert.equal(proGroup.models.length, 1)
+  })
+
   it('filters by exact model ID', () => {
     const filtered = filterModelsByRequested(results, 'nvidia/glm4.7', canonicalizeModelId)
     assert.equal(filtered.length, 1)
@@ -813,6 +1011,24 @@ describe('model grouping and filtering', () => {
     assert.equal(filtered.length, 2)
     assert.ok(filtered.some(r => r.modelId === 'nvidia/glm4.7'))
     assert.ok(filtered.some(r => r.modelId === 'openrouter/glm4.7:free'))
+  })
+
+  it('filters by MiMo Omni alias name', () => {
+    const filtered = filterModelsByRequested([
+      mockResult({ modelId: 'mimo-v2-omni-free', label: 'MiMo V2 Omni' }),
+      mockResult({ modelId: 'xiaomi/mimo-v2-omni:free', label: 'MiMo V2 Omni' }),
+      mockResult({ modelId: 'xiaomi/mimo-v2-pro:free', label: 'MiMo V2 Omni Pro' }),
+    ], 'mimo-v2-omni', canonicalizeModelId)
+
+    assert.equal(filtered.length, 2)
+    assert.ok(filtered.some(r => r.modelId === 'mimo-v2-omni-free'))
+    assert.ok(filtered.some(r => r.modelId === 'xiaomi/mimo-v2-omni:free'))
+  })
+
+  it('canonicalizes stacked model suffixes', () => {
+    const canonical = canonicalizeModelId('x-ai/grok-code-fast-1:optimized:free')
+    assert.equal(canonical.base, 'x-ai/grok-code-fast-1')
+    assert.equal(canonical.unprefixed, 'grok-code-fast-1')
   })
 
   it('returns no models if no match is found', () => {

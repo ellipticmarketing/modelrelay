@@ -335,6 +335,191 @@
       padding: 32px;
     }
 
+    #chat-view {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .chat-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 520px;
+    }
+
+    .chat-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .chat-model-select {
+      min-width: 280px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 0.84rem;
+      outline: none;
+    }
+
+    .chat-model-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .chat-transcript {
+      flex: 1;
+      min-height: 340px;
+      max-height: 62vh;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #faf9f8;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-empty {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      max-width: 42ch;
+      line-height: 1.5;
+    }
+
+    .chat-msg {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px 12px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .chat-msg.user {
+      border-left: 3px solid var(--success);
+    }
+
+    .chat-msg.assistant {
+      border-left: 3px solid var(--accent);
+    }
+
+    .chat-msg.system {
+      border-left: 3px solid var(--warning);
+    }
+
+    .chat-msg-role {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .chat-msg-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--text);
+    }
+
+    .chat-typing {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      padding: 6px 0 0 2px;
+    }
+
+    .chat-typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.3;
+      animation: chatTyping 1.2s infinite ease-in-out;
+    }
+
+    .chat-typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .chat-typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes chatTyping {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.25; }
+      40% { transform: translateY(-3px); opacity: 0.9; }
+    }
+
+    .chat-composer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chat-input {
+      width: 100%;
+      min-height: 86px;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .chat-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chat-status {
+      min-height: 1em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .chat-status.error {
+      color: #b91c1c;
+    }
+
+    .chat-status.success {
+      color: #047857;
+    }
+
+    .chat-send-btn[disabled] {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
     .setup-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1282,6 +1467,7 @@
 
     <div class="tabs">
       <div class="tab active" id="tab-models" onclick="switchTab('models')">Live Telemetry</div>
+      <div class="tab" id="tab-chat" onclick="switchTab('chat')">Chat</div>
       <div class="tab" id="tab-logs" onclick="switchTab('logs')">Request Logs</div>
       <div class="tab" id="tab-settings" onclick="switchTab('settings')">Settings</div>
       <div class="tab" id="tab-setup" onclick="switchTab('setup')">Setup Instructions</div>
@@ -1403,6 +1589,7 @@
                   class="sort-arrow" id="arrow-ping">↕</i></th>
               <th class="sortable text-right" width="150" onclick="setSort('availability')" id="th-availability">
                 Availability <i class="sort-arrow" id="arrow-availability">↕</i></th>
+              <th class="sortable text-right" width="80" onclick="setSort('stability')" id="th-stability">Stability <i class="sort-arrow" id="arrow-stability">↕</i></th>
               <th class="sortable" width="100" onclick="setSort('status')" id="th-status">Status <i class="sort-arrow"
                   id="arrow-status">↕</i></th>
             </tr>
@@ -1465,6 +1652,41 @@
       </div>
       <div id="logs-container" style="display: flex; flex-direction: column; gap: 16px;">
         <!-- Logs generated here -->
+      </div>
+    </div>
+
+    <div id="chat-view" style="display: none;">
+      <div class="chat-layout">
+        <div class="chat-toolbar">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem;">Chat</h2>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <label for="chat-model-select" style="font-size:0.76rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Model</label>
+            <select id="chat-model-select" class="chat-model-select" onchange="onChatModelChange()">
+              <option value="auto-fastest">Auto (Fastest Available)</option>
+            </select>
+            <button id="chat-clear-btn" class="btn" style="background: white; color: var(--text); border: 1px solid var(--border);" onclick="clearChat()">Clear Chat</button>
+          </div>
+        </div>
+        <div id="chat-transcript" class="chat-transcript">
+          <div class="chat-empty">
+            Start a conversation. Press Enter to send and Shift+Enter for a newline.
+          </div>
+        </div>
+        <div id="chat-typing-indicator" class="chat-typing" aria-live="polite">
+          <span>Assistant is thinking</span>
+          <span class="chat-typing-dot"></span>
+          <span class="chat-typing-dot"></span>
+          <span class="chat-typing-dot"></span>
+        </div>
+        <div class="chat-composer">
+          <textarea id="chat-input" class="chat-input" placeholder="Type your message..." onkeydown="handleChatInputKeydown(event)"></textarea>
+          <div class="chat-actions">
+            <div id="chat-status" class="chat-status"></div>
+            <button id="chat-send-btn" class="btn chat-send-btn" onclick="sendChatMessage()">Send</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1580,6 +1802,11 @@
     let qwenOauthSessionId = null;
     let qwenOauthPollTimer = null;
     let filterRules = { minSweScore: null, excludedProviders: [] };
+    let chatMessages = [];
+    let chatInFlight = false;
+    let chatSelectedModel = 'auto-fastest';
+    const CHAT_STORAGE_KEY = 'modelrelay-chat-v1';
+    const CHAT_MODEL_STORAGE_KEY = 'modelrelay-chat-model-v1';
 
 
 
@@ -1588,6 +1815,7 @@
       document.getElementById(`tab-${tab}`).classList.add('active');
 
       document.getElementById('models-view').style.display = tab === 'models' ? 'block' : 'none';
+      document.getElementById('chat-view').style.display = tab === 'chat' ? 'block' : 'none';
       document.getElementById('logs-view').style.display = tab === 'logs' ? 'block' : 'none';
       document.getElementById('settings-view').style.display = tab === 'settings' ? 'block' : 'none';
       document.getElementById('setup-view').style.display = tab === 'setup' ? 'block' : 'none';
@@ -1596,6 +1824,9 @@
         loadSettings();
       } else if (tab === 'logs') {
         loadLogs();
+      } else if (tab === 'chat') {
+        renderChatTranscript();
+        scrollChatToBottom();
       }
     }
 
@@ -1604,14 +1835,15 @@
         if (!metaLoaded) {
           loadMeta();
         }
-        const res = await fetch('/api/models');
-        const data = await res.json();
+        const [modelsRes, configRes] = await Promise.all([
+          fetch('/api/models'),
+          fetch('/api/config'),
+        ]);
+        const data = await modelsRes.json();
+        const providers = await configRes.json();
 
         // Calculate QoS for each model
-        const providers = new Set();
         allModels = data.models.map(m => {
-          providers.add(m.providerKey);
-
           let isRateLimited = false;
           let rateLimitResetMs = 0;
           if (m.rateLimit) {
@@ -1638,15 +1870,10 @@
           return { ...m, qos: m.qos || 0, isRateLimited };
         });
 
+        updateChatModelOptions(allModels);
+
         // Populate Provider Checkboxes
-        const providerGroup = document.getElementById('filter-provider-group');
-        if (providerGroup.children.length === 0) {
-          const provHtml = [];
-          Array.from(providers).sort().forEach(p => {
-            provHtml.push(`<label class="cb-label"><input type="checkbox" value="${p}" checked onchange="render(true)"> ${p}</label>`);
-          });
-          providerGroup.innerHTML = provHtml.join('');
-        }
+        renderProviderFilterGroup(providers);
 
         render(); // triggers automatic (non-user) layout pass
         updateKPIs(allModels, data.best, data.pinnedModelId);
@@ -2090,7 +2317,7 @@
     }
 
     function updateSortHeaders() {
-      const cols = ['model', 'qos', 'intell', 'ping', 'availability', 'status'];
+      const cols = ['model', 'qos', 'intell', 'ping', 'availability', 'stability', 'status'];
       const resetBtn = document.getElementById('sort-reset-btn');
       cols.forEach(col => {
         const th = document.getElementById(`th-${col}`);
@@ -2116,6 +2343,7 @@
         case 'intell': return getBenchmarkSortValue(m.intell);
         case 'rate': return m.isRateLimited ? 1 : 0;
         case 'health': return m.qos || 0; // fallback just in case
+        case 'stability': return m.stabilityScore != null ? m.stabilityScore : -1;
         case 'model': return (m.label || '').toLowerCase();
         default: return 0;
       }
@@ -2128,6 +2356,7 @@
       { col: 'qos', dir: -1 },    // Highest QoS first
       { col: 'ping', dir: 1 },    // fallback tiebreaker
       { col: 'availability', dir: -1 }, // fallback tiebreaker
+      { col: 'stability', dir: -1 }, // highest stability first
       { col: 'model', dir: 1 },   // alphabetical
     ];
 
@@ -2293,7 +2522,7 @@
         intellCell.innerHTML = `<div style="font-weight: 600;">${getBenchmarkTableDisplayValue(m.intell, m.isEstimatedScore)}</div>`;
 
         // Update status dot and text
-        const statusCell = row.cells[6];
+        const statusCell = row.cells[7];
         statusCell.innerHTML = `
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="width: 6px; height: 6px; border-radius: 50%; background: ${m.status === 'up' ? 'var(--success)' : (m.status === 'disabled' || m.status === 'banned' || m.status === 'excluded') ? 'var(--text-muted)' : 'var(--error)'}"></span>
@@ -2329,6 +2558,11 @@
           rateIcon.textContent = m.isRateLimited ? '🕑' : '✅';
           rateIcon.title = m.isRateLimited ? 'Rate limit exceeded, waiting to reset' : 'Rate available';
           rateIcon.style.opacity = '1';
+        }
+
+        const stabilityCell = row.cells[6];
+        if (stabilityCell) {
+          stabilityCell.innerHTML = `<div style="font-size: 0.75rem; font-weight: 700; color: ${getStabilityColor(m.stabilityScore)}">${getStabilityDisplay(m.stabilityScore)}</div>`;
         }
       });
     }
@@ -2376,6 +2610,9 @@
               <span class="uptime-text" style="font-size: 0.75rem; font-weight: 600;">${m.uptime}%</span>
               <span class="rate-icon" style="font-size:1.1rem; opacity: 1;" title="${m.isRateLimited ? 'Rate limit exceeded, waiting to reset' : 'Rate available'}">${m.isRateLimited ? '🕑' : '✅'}</span>
             </div>
+          </td>
+          <td class="text-right">
+            <div style="font-size: 0.75rem; font-weight: 700;">${m.stabilityScore != null ? getStabilityDisplay(m.stabilityScore) : '—'}</div>
           </td>
           <td>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -2429,6 +2666,19 @@
       return `${Math.round(n * 100)}${pill}`;
     }
 
+    function getStabilityColor(score) {
+      if (score == null) return 'var(--text-muted)';
+      if (score >= 70) return '#16a34a';
+      if (score >= 50) return '#4ade80';
+      if (score >= 30) return 'var(--warning)';
+      return 'var(--error)';
+    }
+
+    function getStabilityDisplay(score) {
+      if (score == null) return '—';
+      return Math.round(score).toString();
+    }
+
     function getBenchmarkTableDisplayValue(value, isEstimated = false) {
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return '—';
@@ -2442,6 +2692,22 @@
       const d = new Date(value);
       if (Number.isNaN(d.getTime())) return 'Never';
       return d.toLocaleString();
+    }
+
+    function formatPingHover(p) {
+      const parts = [];
+      const ts = p && p.ts ? formatIsoDateTime(p.ts) : null;
+      if (p && p.code === '200' && typeof p.ms === 'number') {
+        parts.push(`${p.ms}ms`);
+      } else if (p && p.code === '000') {
+        parts.push('timeout');
+      } else if (p && p.code != null) {
+        parts.push(`HTTP ${p.code}`);
+      } else {
+        parts.push('ping');
+      }
+      if (ts && ts !== 'Never') parts.push(ts);
+      return parts.join(' • ');
     }
 
     function setAutoUpdateSaveStatus(message, tone = 'muted') {
@@ -2637,6 +2903,23 @@
       `;
     }
 
+    function renderProviderFilterGroup(providerConfigs) {
+      const providerGroup = document.getElementById('filter-provider-group');
+      if (!providerGroup) return;
+
+      const selected = new Set(Array.from(providerGroup.querySelectorAll('input:checked')).map(cb => cb.value));
+      const enabledProviders = (providerConfigs || []).filter(p => p.enabled);
+
+      providerGroup.innerHTML = enabledProviders
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(p => `<label class="cb-label"><input type="checkbox" value="${escapeHtml(p.key)}" checked onchange="render(true)"> ${escapeHtml(p.name)}</label>`)
+        .join('');
+
+      providerGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = selected.size === 0 || selected.has(cb.value);
+      });
+    }
+
     async function saveFilterRules() {
       const minSweInput = document.getElementById('min-swe-score');
       const minSweValue = minSweInput.value.trim();
@@ -2750,6 +3033,7 @@
         const filterRules = await filterRulesRes.json();
         renderAutoUpdateSettings(autoUpdate);
         renderFilterRules(filterRules, providers);
+        renderProviderFilterGroup(providers);
         const container = document.getElementById('providers-container');
         container.innerHTML = '';
 
@@ -2827,6 +3111,16 @@
               </div>`;
           }
 
+          const openAiCompatibleFieldsHtml = p.key === 'openai-compatible' ? `
+            <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+              <input type="text" id="base-url-${p.key}" value="${escapeHtml(p.baseUrl || '')}" placeholder="https://your-endpoint.example/v1" style="flex:1;" onblur="updateProviderBaseUrl('${p.key}')">
+            </div>
+            <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+              <input type="text" id="model-id-${p.key}" value="${escapeHtml(p.modelId || '')}" placeholder="upstream-model-id" style="flex:1;" onblur="updateProviderModelId('${p.key}')">
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Set the upstream base URL and exact model ID for this provider.</div>
+          ` : '';
+
           const qwenAuthActionsHtml = p.key === 'qwencode' ? `
             <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <button onclick="startQwenOAuthLogin()" style="border:1px solid var(--border); background:#fff; cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Login with Qwen Code</button>
@@ -2863,6 +3157,7 @@
             <div class="form-group" style="display:flex; gap:8px; align-items:center;">
               <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'API Key Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter API Key (optional)...' : 'Enter API Key...')}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
               <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:white; cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
+              ${p.hasKey ? `<button onclick="deleteProviderKey('${p.key}')" style="border:1px solid #fecaca; background:#fff1f2; color:#b91c1c; cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;">Delete Key</button>` : ''}
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
               <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Ping interval (min):</span>
@@ -2870,6 +3165,7 @@
               <span style="font-size:0.75rem; color:var(--text-muted);">(default: 30)</span>
             </div>
             ${optionalBearerAuthHtml}
+            ${openAiCompatibleFieldsHtml}
             ${qwenAuthActionsHtml}
             ${providerErrorHtml}
             ${rateLimitHtml}
@@ -2899,6 +3195,40 @@
       });
       input.value = '';
       loadSettings();
+    }
+
+    async function deleteProviderKey(key) {
+      const input = document.getElementById(`key-${key}`);
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerKey: key, apiKey: null })
+      });
+      if (input) input.value = '';
+      await loadSettings();
+      await fetchData();
+    }
+
+    async function updateProviderBaseUrl(key) {
+      const input = document.getElementById(`base-url-${key}`);
+      const baseUrl = input ? input.value.trim() : '';
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerKey: key, baseUrl })
+      });
+      await fetchData();
+    }
+
+    async function updateProviderModelId(key) {
+      const input = document.getElementById(`model-id-${key}`);
+      const modelId = input ? input.value.trim() : '';
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerKey: key, modelId })
+      });
+      await fetchData();
     }
 
     async function updateProviderPingInterval(key) {
@@ -3008,6 +3338,265 @@
       } catch (err) {
         setQwenLoginStatus(err.message || 'Failed to start Qwen OAuth login.', true);
       }
+    }
+
+    function loadChatState() {
+      try {
+        const rawMessages = sessionStorage.getItem(CHAT_STORAGE_KEY);
+        const parsedMessages = rawMessages ? JSON.parse(rawMessages) : [];
+        chatMessages = Array.isArray(parsedMessages)
+          ? parsedMessages
+            .filter(m => m && typeof m.role === 'string' && m.content != null)
+            .map(m => ({
+              role: String(m.role),
+              content: typeof m.content === 'string' ? m.content : formatMessageContent(m.content),
+              ts: typeof m.ts === 'string' ? m.ts : new Date().toISOString(),
+              model: typeof m.model === 'string' && m.model.trim() ? m.model.trim() : null
+            }))
+          : [];
+
+        const rawModel = sessionStorage.getItem(CHAT_MODEL_STORAGE_KEY);
+        chatSelectedModel = rawModel && typeof rawModel === 'string' ? rawModel : 'auto-fastest';
+      } catch {
+        chatMessages = [];
+        chatSelectedModel = 'auto-fastest';
+      }
+    }
+
+    function saveChatState() {
+      try {
+        sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages));
+        sessionStorage.setItem(CHAT_MODEL_STORAGE_KEY, chatSelectedModel || 'auto-fastest');
+      } catch {
+        // Ignore storage failures and keep chat in-memory.
+      }
+    }
+
+    function updateChatModelOptions(models = []) {
+      const select = document.getElementById('chat-model-select');
+      if (!select) return;
+
+      const previousSelection = chatSelectedModel || select.value || 'auto-fastest';
+      const options = [
+        { value: 'auto-fastest', label: 'Auto (Fastest Available)' },
+        ...models
+          .filter(m => m && m.modelId)
+          .sort((a, b) => (a.label || a.modelId).localeCompare(b.label || b.modelId))
+          .map(m => ({
+            value: m.modelId,
+            label: `${m.label || m.modelId} · ${m.providerKey}`
+          }))
+      ];
+
+      const deduped = [];
+      const seen = new Set();
+      for (const opt of options) {
+        if (seen.has(opt.value)) continue;
+        seen.add(opt.value);
+        deduped.push(opt);
+      }
+
+      select.innerHTML = deduped
+        .map(opt => `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`)
+        .join('');
+
+      const hasPrevious = deduped.some(opt => opt.value === previousSelection);
+      chatSelectedModel = hasPrevious ? previousSelection : 'auto-fastest';
+      select.value = chatSelectedModel;
+      saveChatState();
+    }
+
+    function onChatModelChange() {
+      const select = document.getElementById('chat-model-select');
+      chatSelectedModel = (select && select.value) ? select.value : 'auto-fastest';
+      saveChatState();
+      setChatStatus(`Using model: ${chatSelectedModel}`, 'muted');
+    }
+
+    function setChatStatus(message, tone = 'muted') {
+      const statusEl = document.getElementById('chat-status');
+      if (!statusEl) return;
+      statusEl.className = `chat-status${tone === 'error' ? ' error' : tone === 'success' ? ' success' : ''}`;
+      statusEl.textContent = message || '';
+    }
+
+    function scrollChatToBottom() {
+      const transcript = document.getElementById('chat-transcript');
+      if (!transcript) return;
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+
+    function renderChatTranscript() {
+      const transcript = document.getElementById('chat-transcript');
+      if (!transcript) return;
+
+      if (!chatMessages.length) {
+        transcript.innerHTML = `
+          <div class="chat-empty">
+            Start a conversation. Press Enter to send and Shift+Enter for a newline.
+          </div>
+        `;
+        return;
+      }
+
+      transcript.innerHTML = chatMessages.map(msg => {
+        const role = msg && msg.role ? String(msg.role) : 'assistant';
+        const roleClass = role === 'user' ? 'user' : role === 'system' ? 'system' : 'assistant';
+        const content = escapeHtml(formatMessageContent(msg && msg.content != null ? msg.content : ''));
+        const ts = msg && msg.ts ? new Date(msg.ts) : null;
+        const tsLabel = ts && !Number.isNaN(ts.getTime())
+          ? ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '';
+        const modelLabel = msg && typeof msg.model === 'string' && msg.model.trim() ? msg.model.trim() : '';
+        const headerBits = [role];
+        if (tsLabel) headerBits.push(tsLabel);
+        if (role === 'assistant' && modelLabel) headerBits.push(modelLabel);
+
+        return `
+          <div class="chat-msg ${roleClass}">
+            <div class="chat-msg-role">${headerBits.map(part => escapeHtml(part)).join(' • ')}</div>
+            <div class="chat-msg-content">${content}</div>
+          </div>
+        `;
+      }).join('');
+
+      scrollChatToBottom();
+    }
+
+    function setChatInFlight(inFlight) {
+      chatInFlight = !!inFlight;
+
+      const sendBtn = document.getElementById('chat-send-btn');
+      const clearBtn = document.getElementById('chat-clear-btn');
+      const input = document.getElementById('chat-input');
+      const modelSelect = document.getElementById('chat-model-select');
+      const typing = document.getElementById('chat-typing-indicator');
+
+      if (sendBtn) {
+        sendBtn.disabled = chatInFlight;
+        sendBtn.textContent = chatInFlight ? 'Sending...' : 'Send';
+      }
+      if (clearBtn) clearBtn.disabled = chatInFlight;
+      if (input) input.disabled = chatInFlight;
+      if (modelSelect) modelSelect.disabled = chatInFlight;
+      if (typing) typing.style.display = chatInFlight ? 'flex' : 'none';
+    }
+
+    function handleChatInputKeydown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendChatMessage();
+      }
+    }
+
+    function clearChat() {
+      if (chatInFlight) return;
+      chatMessages = [];
+      saveChatState();
+      setChatStatus('Chat cleared. Starting fresh.', 'success');
+      renderChatTranscript();
+      const input = document.getElementById('chat-input');
+      if (input) input.focus();
+    }
+
+    function buildChatRequestMessages() {
+      return chatMessages
+        .filter(m => m && typeof m.role === 'string' && m.content != null)
+        .map(m => ({
+          role: String(m.role),
+          content: typeof m.content === 'string' ? m.content : formatMessageContent(m.content)
+        }));
+    }
+
+    function getAssistantTextFromResponse(data) {
+      const choice = data && Array.isArray(data.choices) ? data.choices[0] : null;
+      const message = choice && choice.message ? choice.message : null;
+      if (!message) return '';
+
+      if (typeof message.content === 'string' && message.content.trim() !== '') {
+        return message.content;
+      }
+
+      if (Array.isArray(message.content)) {
+        const joined = message.content.map(part => {
+          if (typeof part === 'string') return part;
+          if (part && part.type === 'text' && typeof part.text === 'string') return part.text;
+          return '';
+        }).filter(Boolean).join('\n');
+        if (joined.trim() !== '') return joined;
+      }
+
+      if (message.tool_calls) {
+        return JSON.stringify(message.tool_calls, null, 2);
+      }
+      if (message.function_call) {
+        return JSON.stringify(message.function_call, null, 2);
+      }
+
+      return '';
+    }
+
+    async function sendChatMessage() {
+      if (chatInFlight) return;
+      const input = document.getElementById('chat-input');
+      if (!input) return;
+
+      const content = input.value.replace(/\r\n/g, '\n').trim();
+      if (!content) {
+        setChatStatus('Type a message before sending.', 'error');
+        return;
+      }
+
+      const userMessage = { role: 'user', content, ts: new Date().toISOString() };
+      chatMessages.push(userMessage);
+      saveChatState();
+      renderChatTranscript();
+      input.value = '';
+      setChatStatus('');
+      setChatInFlight(true);
+
+      try {
+        const requestBody = {
+          model: chatSelectedModel || 'auto-fastest',
+          messages: buildChatRequestMessages()
+        };
+
+        const res = await fetch('/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errorMessage = data?.error?.message || data?.error || data?.message || `Chat request failed (${res.status}).`;
+          throw new Error(errorMessage);
+        }
+
+        const assistantText = getAssistantTextFromResponse(data);
+        if (!assistantText) {
+          throw new Error('The provider returned an empty assistant response.');
+        }
+
+        const responseModel = typeof data?.model === 'string' && data.model.trim() ? data.model.trim() : null;
+        chatMessages.push({ role: 'assistant', content: assistantText, ts: new Date().toISOString(), model: responseModel });
+        saveChatState();
+        renderChatTranscript();
+        setChatStatus('Response received.', 'success');
+      } catch (err) {
+        setChatStatus(err?.message || 'Failed to send message.', 'error');
+      } finally {
+        setChatInFlight(false);
+        if (input) input.focus();
+      }
+    }
+
+    function initializeChat() {
+      loadChatState();
+      updateChatModelOptions(allModels);
+      renderChatTranscript();
+      setChatInFlight(false);
+      setChatStatus('');
     }
 
     async function loadLogs() {
@@ -3400,7 +3989,7 @@
             ? Math.max(15, Math.round((p.ms / maxMs) * 100))
             : 15;
           const color = ok ? 'var(--success)' : 'var(--error)';
-          const tip = ok ? `${p.ms}ms` : (p.code === '000' ? 'timeout' : `HTTP ${p.code}`);
+          const tip = escapeHtml(formatPingHover(p)).replace(/"/g, '&quot;');
           return `<div title="${tip}" style="flex:1; min-width:4px; height:${heightPct}%; background:${color}; border-radius:2px; opacity:0.8; cursor:default;"></div>`;
         }).join('');
 
@@ -3530,9 +4119,11 @@
       }
     }
 
+    initializeChat();
     setInterval(fetchData, 4000);
     fetchData();
   </script>
 </body>
 
 </html>
+
