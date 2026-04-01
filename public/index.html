@@ -1607,6 +1607,11 @@
       <div id="autoupdate-container" class="provider-section">
         <!-- Auto-update settings generated here -->
       </div>
+      <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Pinning</h3>
+      <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Choose whether pinning locks one exact provider model or the whole canonical model family across providers.</p>
+      <div id="pinning-settings-container" class="provider-section">
+        <!-- Pinning settings generated here -->
+      </div>
       <h3 style="margin: 0 0 0.25rem; font-size: 1rem;">Ping Filtering Exceptions</h3>
       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Exclude models from pinging and routing based on criteria.</p>
       <div id="filter-rules-container">
@@ -1646,7 +1651,9 @@
             <button id="logs-mode-history" class="logs-mode-btn active" onclick="setLogsViewMode('history')" role="tab"
               aria-selected="true">Message History</button>
           </div>
-          <button onclick="loadLogs()" class="btn"
+          <button id="logs-pause-toggle" onclick="toggleLogsAutoRefresh()" class="btn"
+            style="background: white; color: var(--text); border: 1px solid var(--border);">Pause Live Updates</button>
+          <button onclick="loadLogs(true)" class="btn"
             style="background: white; color: var(--text); border: 1px solid var(--border);">Refresh Logs</button>
         </div>
       </div>
@@ -1794,10 +1801,14 @@
     let sortState = null;
     let openDrawerModelId = null;
     let currentRenderedOrder = [];
-    let activePinnedModelId = null; // tracks the currently pinned model server-side
+    let activePinnedModelId = null; // tracks the current pinned selection key
+    let activePinnedProviderKey = null;
+    let activePinnedRowKeys = []; // resolved pinned rows from server/client
+    let pinningMode = 'canonical';
     let isTableHovered = false;
     let metaLoaded = false;
     let logsViewMode = 'history';
+    let logsAutoRefreshPaused = false;
     const PROVIDER_ERROR_MAX_AGE_MS = 120 * 60_000;
     let qwenOauthSessionId = null;
     let qwenOauthPollTimer = null;
@@ -1807,6 +1818,9 @@
     let chatSelectedModel = 'auto-fastest';
     const CHAT_STORAGE_KEY = 'modelrelay-chat-v1';
     const CHAT_MODEL_STORAGE_KEY = 'modelrelay-chat-model-v1';
+    const MODEL_ID_ALIASES = {
+      'mimo-v2-omni-free': 'xiaomi/mimo-v2-omni:free',
+    };
 
 
 
@@ -1823,7 +1837,7 @@
       if (tab === 'settings') {
         loadSettings();
       } else if (tab === 'logs') {
-        loadLogs();
+        loadLogs(true);
       } else if (tab === 'chat') {
         renderChatTranscript();
         scrollChatToBottom();
@@ -1870,13 +1884,14 @@
           return { ...m, qos: m.qos || 0, isRateLimited };
         });
 
+        setActivePinnedModel(data.pinnedModelId, data.pinnedProviderKey, data.pinnedRowKeys, data.pinningMode);
         updateChatModelOptions(allModels);
 
         // Populate Provider Checkboxes
         renderProviderFilterGroup(providers);
 
         render(); // triggers automatic (non-user) layout pass
-        updateKPIs(allModels, data.best, data.pinnedModelId);
+        updateKPIs(allModels, data.best);
         if (openDrawerModelId) {
           const m = allModels.find(x => x.modelId === openDrawerModelId);
           if (m) updateDrawerContent(m);
@@ -2055,8 +2070,52 @@
       return [...candidates].sort((a, b) => (b.qos || 0) - (a.qos || 0))[0];
     }
 
-    function updateKPIs(models, bestModelId, pinnedModelId) {
-      activePinnedModelId = pinnedModelId || null;
+    function canonicalizeClientModelId(modelId) {
+      const raw = typeof modelId === 'string' ? modelId.trim() : '';
+      const resolved = MODEL_ID_ALIASES[raw] || raw;
+      const base = resolved.replace(/(?::[a-z0-9-]+)+$/i, '');
+      const unprefixed = base.includes('/') ? base.split('/').pop() : base;
+      return { base, unprefixed };
+    }
+
+    function getModelRowKey(modelOrProviderKey, maybeModelId) {
+      if (typeof modelOrProviderKey === 'object' && modelOrProviderKey) {
+        return `${modelOrProviderKey.providerKey || ''}::${modelOrProviderKey.modelId || ''}`;
+      }
+      return `${modelOrProviderKey || ''}::${maybeModelId || ''}`;
+    }
+
+    function getPinnedRowKeysForSelection(modelId, providerKey = null, mode = pinningMode) {
+      if (!modelId) return [];
+      if (mode === 'exact') return [getModelRowKey(providerKey, modelId)];
+
+      const { unprefixed: selectedUnprefixed } = canonicalizeClientModelId(modelId);
+      return allModels
+        .filter(m => canonicalizeClientModelId(m.modelId).unprefixed === selectedUnprefixed)
+        .map(m => getModelRowKey(m));
+    }
+
+    function syncPinnedModelUI() {
+      const badge = document.getElementById('pin-badge');
+      if (badge) badge.style.display = activePinnedRowKeys.length > 0 ? 'inline-block' : 'none';
+
+      if (openDrawerModelId) {
+        const openModel = allModels.find(m => m.modelId === openDrawerModelId);
+        if (openModel) updateDrawerContent(openModel);
+      }
+    }
+
+    function setActivePinnedModel(modelId, providerKey = null, resolvedRowKeys = null, mode = pinningMode) {
+      activePinnedModelId = modelId || null;
+      activePinnedProviderKey = modelId ? (providerKey || null) : null;
+      pinningMode = mode === 'exact' ? 'exact' : 'canonical';
+      activePinnedRowKeys = Array.isArray(resolvedRowKeys)
+        ? [...new Set(resolvedRowKeys.filter(Boolean))]
+        : getPinnedRowKeysForSelection(activePinnedModelId, activePinnedProviderKey, pinningMode);
+      syncPinnedModelUI();
+    }
+
+    function updateKPIs(models, bestModelId) {
       const upModels = models.filter(m => m.status === 'up');
 
       const allProviders = new Set(models.map(m => m.providerKey));
@@ -2081,10 +2140,6 @@
       document.getElementById('kpi-best').textContent = bestModel ? bestModel.label : 'None Online';
 
       drawCurrentModelAnimation(!!bestModel);
-
-      // Show/hide pin badge
-      const badge = document.getElementById('pin-badge');
-      if (badge) badge.style.display = activePinnedModelId ? 'inline-block' : 'none';
     }
 
     function drawModelsConstellation(total, online) {
@@ -2263,15 +2318,29 @@
       });
     }
 
-    async function pinModel(modelId) {
+    async function pinModel(modelId, providerKey = null) {
+      const previousPinnedModelId = activePinnedModelId;
+      const previousPinnedProviderKey = activePinnedProviderKey;
+      const previousPinnedRowKeys = [...activePinnedRowKeys];
+      const previousPinningMode = pinningMode;
+      setActivePinnedModel(modelId || null, providerKey, null, pinningMode);
+      render(true);
+
       try {
-        await fetch('/api/pinned', {
+        const res = await fetch('/api/pinned', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ modelId: modelId || null })
+          body: JSON.stringify({ modelId: modelId || null, providerKey: modelId ? providerKey : null })
         });
+        if (!res.ok) {
+          throw new Error(`Pin request failed with status ${res.status}`);
+        }
+        const data = await res.json();
+        setActivePinnedModel(data.pinnedModelId, data.pinnedProviderKey, data.pinnedRowKeys, data.pinningMode);
         await fetchData();
       } catch (e) {
+        setActivePinnedModel(previousPinnedModelId, previousPinnedProviderKey, previousPinnedRowKeys, previousPinningMode);
+        render(true);
         console.error('Failed to pin model', e);
       }
     }
@@ -2499,9 +2568,9 @@
         // Update pin button state in first cell
         const pinBtn = row.cells[0].querySelector('.pin-row-btn');
         if (pinBtn) {
-          const isPinnedRow = m.modelId === activePinnedModelId;
+          const isPinnedRow = activePinnedRowKeys.includes(getModelRowKey(m));
           pinBtn.className = 'pin-row-btn' + (isPinnedRow ? ' pinned' : '');
-          pinBtn.onclick = () => pinModel(isPinnedRow ? '' : m.modelId);
+          pinBtn.onclick = () => pinModel(isPinnedRow ? '' : m.modelId, m.providerKey);
           pinBtn.title = isPinnedRow ? 'Unpin model' : 'Pin model';
         }
 
@@ -2574,14 +2643,14 @@
       const pingClass = getPingAnimClass(m.avg);
       const pingSpeed = getPingSpeed(m.avg);
 
-      const isPinnedRow = m.modelId === activePinnedModelId;
+      const isPinnedRow = activePinnedRowKeys.includes(getModelRowKey(m));
       tr.innerHTML = `
           <td>
             <div style="display:flex; flex-direction:column; gap:2px; align-items:center;">
               <div class="expand-btn" onclick='openDrawer(${JSON.stringify(m).replace(/'/g, "&apos;")})'>
                 <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
               </div>
-              <div class="pin-row-btn ${isPinnedRow ? 'pinned' : ''}" onclick="pinModel('${isPinnedRow ? '' : m.modelId}')" title="${isPinnedRow ? 'Unpin model' : 'Pin model'}">📌</div>
+              <div class="pin-row-btn ${isPinnedRow ? 'pinned' : ''}" onclick="pinModel('${isPinnedRow ? '' : m.modelId}', '${m.providerKey}')" title="${isPinnedRow ? 'Unpin model' : 'Pin model'}">📌</div>
             </div>
           </td>
           <td style="cursor:pointer;" onclick='openDrawer(${JSON.stringify(m).replace(/'/g, "&apos;")})'>
@@ -2850,6 +2919,53 @@
       `;
     }
 
+    function renderPinningSettings(pinningState) {
+      const container = document.getElementById('pinning-settings-container');
+      if (!container) return;
+
+      const mode = pinningState?.pinningMode === 'exact' ? 'exact' : 'canonical';
+      pinningMode = mode;
+
+      container.innerHTML = `
+        <div class="autoupdate-panel">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+            <div>
+              <h3 style="margin:0; font-size:1rem;">Pinned Model Scope</h3>
+              <div style="margin-top:6px; color:var(--text-muted); font-size:0.82rem;">Canonical pins route to the best matching provider for that model family. Exact pins lock to the specific provider row you clicked.</div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; background:${mode === 'canonical' ? '#eff6ff' : '#fff'}; border:1px solid ${mode === 'canonical' ? '#bfdbfe' : 'var(--border)'}; border-radius:10px; padding:10px 12px; max-width:320px;">
+                <input type="radio" name="pinning-mode" value="canonical" ${mode === 'canonical' ? 'checked' : ''} onchange="updatePinningMode('canonical')">
+                <span>
+                  <span style="display:block; font-weight:700; font-size:0.82rem;">Canonical Group</span>
+                  <span style="display:block; color:var(--text-muted); font-size:0.76rem; margin-top:3px;">Default. Pin the same model across providers and route to the best available match.</span>
+                </span>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; background:${mode === 'exact' ? '#eff6ff' : '#fff'}; border:1px solid ${mode === 'exact' ? '#bfdbfe' : 'var(--border)'}; border-radius:10px; padding:10px 12px; max-width:320px;">
+                <input type="radio" name="pinning-mode" value="exact" ${mode === 'exact' ? 'checked' : ''} onchange="updatePinningMode('exact')">
+                <span>
+                  <span style="display:block; font-weight:700; font-size:0.82rem;">Exact Provider Row</span>
+                  <span style="display:block; color:var(--text-muted); font-size:0.76rem; margin-top:3px;">Pin only the exact provider/model row you clicked.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function updatePinningMode(mode) {
+      const nextMode = mode === 'exact' ? 'exact' : 'canonical';
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinningMode: nextMode })
+      });
+      pinningMode = nextMode;
+      await loadSettings();
+      await fetchData();
+    }
+
     function renderFilterRules(filterRulesFromServer, providers) {
       const container = document.getElementById('filter-rules-container');
       if (!container || !filterRulesFromServer) return;
@@ -3023,15 +3139,18 @@
 
     async function loadSettings() {
       try {
-        const [providersRes, autoUpdateRes, filterRulesRes] = await Promise.all([
+        const [providersRes, autoUpdateRes, filterRulesRes, pinningRes] = await Promise.all([
           fetch('/api/config'),
           fetch('/api/autoupdate'),
           fetch('/api/filter-rules'),
+          fetch('/api/pinning'),
         ]);
         const providers = await providersRes.json();
         const autoUpdate = await autoUpdateRes.json();
         const filterRules = await filterRulesRes.json();
+        const pinning = await pinningRes.json();
         renderAutoUpdateSettings(autoUpdate);
+        renderPinningSettings(pinning);
         renderFilterRules(filterRules, providers);
         renderProviderFilterGroup(providers);
         const container = document.getElementById('providers-container');
@@ -3599,7 +3718,23 @@
       setChatStatus('');
     }
 
-    async function loadLogs() {
+    function updateLogsPauseButton() {
+      const pauseBtn = document.getElementById('logs-pause-toggle');
+      if (!pauseBtn) return;
+      pauseBtn.textContent = logsAutoRefreshPaused ? 'Resume Live Updates' : 'Pause Live Updates';
+      pauseBtn.setAttribute('aria-pressed', logsAutoRefreshPaused ? 'true' : 'false');
+    }
+
+    function toggleLogsAutoRefresh() {
+      logsAutoRefreshPaused = !logsAutoRefreshPaused;
+      updateLogsPauseButton();
+      if (!logsAutoRefreshPaused) {
+        loadLogs(true);
+      }
+    }
+
+    async function loadLogs(force = false) {
+      if (!force && logsAutoRefreshPaused) return;
       try {
         const res = await fetch('/api/logs');
         const logs = await res.json();
@@ -3789,7 +3924,7 @@
         cardsBtn.setAttribute('aria-selected', logsViewMode === 'cards' ? 'true' : 'false');
         historyBtn.setAttribute('aria-selected', logsViewMode === 'history' ? 'true' : 'false');
       }
-      loadLogs();
+      loadLogs(true);
     }
 
     function escapeHtml(value) {
@@ -4008,7 +4143,7 @@
           </div>`;
       }
 
-      const isModelPinned = m.modelId === activePinnedModelId;
+      const isModelPinned = activePinnedRowKeys.includes(getModelRowKey(m));
       const lastErrorHtml = m.lastError && m.lastError.message
         ? `<div style="margin: -6px 0 14px; padding: 10px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #7f1d1d; font-size: 0.76rem;">
             <div style="font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; color: #991b1b;">Last Ping Error</div>
@@ -4022,7 +4157,7 @@
             <div style="font-family: monospace; background: #f3f2f1; padding: 12px; border-radius: 8px; font-size: 0.875rem; word-break:break-all;">${m.modelId}</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
-            <button onclick="pinModel('${isModelPinned ? '' : m.modelId}')" style="background: ${isModelPinned ? '#eff6ff' : '#f3f2f1'}; border: ${isModelPinned ? '1px solid #bfdbfe' : '1px solid transparent'}; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${isModelPinned ? '#1e40af' : 'var(--text)'}; cursor: pointer;">
+            <button onclick="pinModel('${isModelPinned ? '' : m.modelId}', '${m.providerKey}')" style="background: ${isModelPinned ? '#eff6ff' : '#f3f2f1'}; border: ${isModelPinned ? '1px solid #bfdbfe' : '1px solid transparent'}; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${isModelPinned ? '#1e40af' : 'var(--text)'}; cursor: pointer;">
               ${isModelPinned ? '📌 Unpin Model' : '📌 Pin Model'}
             </button>
             <button onclick="pingModelNow('${m.modelId}')" style="background: #ecfeff; border: 1px solid #a5f3fc; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: #0e7490; cursor: pointer;">
@@ -4107,7 +4242,7 @@
 
         // Immediately refresh telemetry data and logs
         await fetchData();
-        if (typeof loadLogs === 'function') loadLogs();
+        if (typeof loadLogs === 'function') loadLogs(true);
 
         // Re-render drawer if it is currently open for this model
         if (openDrawerModelId === modelId) {
@@ -4120,6 +4255,7 @@
     }
 
     initializeChat();
+    updateLogsPauseButton();
     setInterval(fetchData, 4000);
     fetchData();
   </script>

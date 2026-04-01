@@ -178,6 +178,7 @@ modelrelay config export | modelrelay config import
 - Use `model: "auto-fastest"` to route to the best model overall
 - Use a grouped model ID such as `minimax-m2.5`, `kimi-k2.5`, or `glm4.7` to route within that model group
 - For grouped IDs, modelrelay selects the provider with the best current QoS for that group
+- In the Web UI, pinned models can now use either `Canonical Group` mode (default, pins the same model across providers) or `Exact Provider Row` mode from `Settings`
 - Streaming and non-streaming requests are both supported
 
 ### `/v1/models`
@@ -226,7 +227,7 @@ You can also start OAuth directly from the Web UI Providers tab using `Login wit
 ### Config migration (CLI + Web UI)
 
 - In the Web UI, open `Settings` -> `Configuration Transfer` to export/copy/import a token.
-- The token includes your full config (including API keys, provider toggles, bans, filter rules, and auto-update settings).
+- The token includes your full config (including API keys, provider toggles, pinning mode, bans, filter rules, and auto-update settings).
 - Treat tokens as secrets. Anyone with the token can import your keys/settings.
 - Alternative: copy the config file directly from `~/.modelrelay.json` to the other machine at the same path (`~/.modelrelay.json`).
 

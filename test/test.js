@@ -22,10 +22,10 @@ import {
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
-import { exportConfigToken, getApiKey, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
+import { exportConfigToken, getApiKey, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
-import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
+import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -76,6 +76,7 @@ describe('config helpers', () => {
     assert.equal(getProviderPingIntervalMs(config, 'qwencode'), 10 * 60_000)
     assert.equal(getProviderPingIntervalMs(config, 'openrouter'), 30 * 60_000) // default
     assert.equal(getProviderPingIntervalMs(config, 'missing'), 30 * 60_000) // default
+    assert.equal(getPinningMode(config), 'canonical')
   })
 
   it('exports/imports full config through transfer token', () => {
@@ -86,6 +87,7 @@ describe('config helpers', () => {
       autoUpdate: { enabled: true, intervalHours: 12 },
       minSweScore: 0.45,
       excludedProviders: ['openrouter'],
+      pinningMode: 'exact',
     }
 
     const token = exportConfigToken(config)
@@ -99,6 +101,7 @@ describe('config helpers', () => {
     assert.equal(imported.autoUpdate.intervalHours, 12)
     assert.equal(imported.minSweScore, 0.45)
     assert.deepEqual(imported.excludedProviders, ['openrouter'])
+    assert.equal(imported.pinningMode, 'exact')
   })
 
   it('imports legacy plain-base64 config payloads', () => {
@@ -1039,6 +1042,35 @@ describe('model grouping and filtering', () => {
   it('returns all models for auto-fastest', () => {
     const filtered = filterModelsByRequested(results, 'auto-fastest', canonicalizeModelId)
     assert.equal(filtered.length, 3)
+  })
+})
+
+describe('pinned model routing', () => {
+  const results = [
+    mockResult({ modelId: 'nvidia/glm4.7', label: 'GLM 4.7', providerKey: 'nvidia', pings: [{ ms: 90, code: '200' }], intell: 0.7 }),
+    mockResult({ modelId: 'glm4.7', label: 'GLM 4.7', providerKey: 'vendor-a', pings: [{ ms: 120, code: '200' }], intell: 0.69 }),
+    mockResult({ modelId: 'glm4.7', label: 'GLM 4.7', providerKey: 'vendor-b', pings: [{ ms: 150, code: '200' }], intell: 0.65 }),
+    mockResult({ modelId: 'openrouter/glm4.7:free', label: 'GLM 4.7', providerKey: 'openrouter', pings: [{ ms: 140, code: '200' }], intell: 0.68 }),
+  ]
+
+  it('matches the full canonical group by default', () => {
+    const matches = getPinnedModelMatches(results, 'nvidia/glm4.7', 'canonical')
+    assert.deepEqual(matches.map(r => `${r.providerKey}:${r.modelId}`), [
+      'nvidia:nvidia/glm4.7',
+      'vendor-a:glm4.7',
+      'vendor-b:glm4.7',
+      'openrouter:openrouter/glm4.7:free',
+    ])
+  })
+
+  it('matches only the exact row in exact mode', () => {
+    const matches = getPinnedModelMatches(results, 'glm4.7', 'exact', 'vendor-a')
+    assert.deepEqual(matches.map(r => `${r.providerKey}:${r.modelId}`), ['vendor-a:glm4.7'])
+  })
+
+  it('routes to the best eligible provider within a canonical pin group', () => {
+    const candidate = getPinnedModelCandidate(results, 'nvidia/glm4.7', 'canonical')
+    assert.equal(candidate?.modelId, 'nvidia/glm4.7')
   })
 })
 
