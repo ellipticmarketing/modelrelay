@@ -12,10 +12,12 @@ jobs:
       - name: Checkout the fork
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch full history, not a shallow clone
+          fetch-depth: 0
 
       - name: Sync with upstream
         run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git remote add upstream https://github.com/ellipticmarketing/modelrelay.git
           git fetch upstream
           git checkout master
