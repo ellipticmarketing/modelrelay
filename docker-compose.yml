@@ -1,6 +1,6 @@
 services:
   modelrelay:
-    build: .
+    image: ghcr.io/stgreenb/modelrelay:master
     container_name: modelrelay
     restart: unless-stopped
     ports:
@@ -10,5 +10,8 @@ services:
     environment:
       - NODE_ENV=production
       - HOME=/app/config
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
 volumes:
   modelrelay_config:

@@ -1640,6 +1640,7 @@
                   class="sort-arrow" id="arrow-ping">↕</i></th>
               <th class="sortable text-right" width="150" onclick="setSort('availability')" id="th-availability">
                 Availability <i class="sort-arrow" id="arrow-availability">↕</i></th>
+              <th class="sortable text-right" width="80" onclick="setSort('stability')" id="th-stability">Stability <i class="sort-arrow" id="arrow-stability">↕</i></th>
               <th class="sortable" width="100" onclick="setSort('status')" id="th-status">Status <i class="sort-arrow"
                   id="arrow-status">↕</i></th>
             </tr>
@@ -2448,7 +2449,7 @@
     }
 
     function updateSortHeaders() {
-      const cols = ['model', 'qos', 'intell', 'ping', 'availability', 'status'];
+      const cols = ['model', 'qos', 'intell', 'ping', 'availability', 'stability', 'status'];
       const resetBtn = document.getElementById('sort-reset-btn');
       cols.forEach(col => {
         const th = document.getElementById(`th-${col}`);
@@ -2474,6 +2475,7 @@
         case 'intell': return getBenchmarkSortValue(m.intell);
         case 'rate': return m.isRateLimited ? 1 : 0;
         case 'health': return m.qos || 0; // fallback just in case
+        case 'stability': return m.stabilityScore != null ? m.stabilityScore : -1;
         case 'model': return (m.label || '').toLowerCase();
         default: return 0;
       }
@@ -2486,6 +2488,7 @@
       { col: 'qos', dir: -1 },    // Highest QoS first
       { col: 'ping', dir: 1 },    // fallback tiebreaker
       { col: 'availability', dir: -1 }, // fallback tiebreaker
+      { col: 'stability', dir: -1 }, // highest stability first
       { col: 'model', dir: 1 },   // alphabetical
     ];
 
@@ -2651,7 +2654,7 @@
         intellCell.innerHTML = `<div style="font-weight: 600;">${getBenchmarkTableDisplayValue(m.intell, m.isEstimatedScore)}</div>`;
 
         // Update status dot and text
-        const statusCell = row.cells[6];
+        const statusCell = row.cells[7];
         statusCell.innerHTML = `
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="width: 6px; height: 6px; border-radius: 50%; background: ${m.status === 'up' ? 'var(--success)' : (m.status === 'disabled' || m.status === 'banned' || m.status === 'excluded') ? 'var(--text-muted)' : 'var(--error)'}"></span>
@@ -2687,6 +2690,11 @@
           rateIcon.textContent = m.isRateLimited ? '🕑' : '✅';
           rateIcon.title = m.isRateLimited ? 'Rate limit exceeded, waiting to reset' : 'Rate available';
           rateIcon.style.opacity = '1';
+        }
+
+        const stabilityCell = row.cells[6];
+        if (stabilityCell) {
+          stabilityCell.innerHTML = `<div style="font-size: 0.75rem; font-weight: 700; color: ${getStabilityColor(m.stabilityScore)}">${getStabilityDisplay(m.stabilityScore)}</div>`;
         }
       });
     }
@@ -2734,6 +2742,9 @@
               <span class="uptime-text" style="font-size: 0.75rem; font-weight: 600;">${m.uptime}%</span>
               <span class="rate-icon" style="font-size:1.1rem; opacity: 1;" title="${m.isRateLimited ? 'Rate limit exceeded, waiting to reset' : 'Rate available'}">${m.isRateLimited ? '🕑' : '✅'}</span>
             </div>
+          </td>
+          <td class="text-right">
+            <div style="font-size: 0.75rem; font-weight: 700;">${m.stabilityScore != null ? getStabilityDisplay(m.stabilityScore) : '—'}</div>
           </td>
           <td>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -2785,6 +2796,19 @@
       if (!Number.isFinite(n) || n <= 0) return '—';
       const pill = isEstimated ? '<span class="pill-estimate">Unknown</span>' : '';
       return `${Math.round(n * 100)}${pill}`;
+    }
+
+    function getStabilityColor(score) {
+      if (score == null) return 'var(--text-muted)';
+      if (score >= 70) return '#16a34a';
+      if (score >= 50) return '#4ade80';
+      if (score >= 30) return 'var(--warning)';
+      return 'var(--error)';
+    }
+
+    function getStabilityDisplay(score) {
+      if (score == null) return '—';
+      return Math.round(score).toString();
     }
 
     function getBenchmarkTableDisplayValue(value, isEstimated = false) {

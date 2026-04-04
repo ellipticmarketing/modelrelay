@@ -1,18 +1,17 @@
 FROM node:24-alpine
 
-# Install dependencies
 RUN apk add --no-cache ca-certificates
 
-# Install modelrelay globally
-RUN npm install -g modelrelay
-
-# Create a directory for the configuration
 WORKDIR /app
 
-# Expose the correct local router port
+COPY package*.json ./
+RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev
+
+COPY . .
+
 EXPOSE 7352
 
-# Entrypoint: handles commands passed to the container
-ENTRYPOINT ["modelrelay"]
-CMD ["start"]
+ENV NODE_ENV=production
 
+ENTRYPOINT ["node", "bin/modelrelay.js"]
+CMD ["start"]

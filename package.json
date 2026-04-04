@@ -42,6 +42,7 @@
     "bin/",
     "lib/",
     "public/",
+    "scripts/",
     "sources.js",
     "scores.js",
     "README.md",
@@ -49,11 +50,16 @@
   ],
   "scripts": {
     "start": "node bin/modelrelay.js",
-    "test": "node --test test/test.js"
+    "test": "node --test test/test.js",
+    "sync:sources": "node scripts/sync-sources.js",
+    "sync:sources:dry": "node scripts/sync-sources.js --dry-run --verbose"
   },
   "dependencies": {
     "chalk": "^5.4.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "https-proxy-agent": "^7.0.0",
+    "global-agent": "^3.0.0",
+    "http-proxy-agent": "^7.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
