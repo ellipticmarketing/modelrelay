@@ -22,7 +22,7 @@
 
 - 💸 **Completely Free:** Stop paying for API usage. We seamlessly provide access to robust free models.
 - 🧠 **State-of-the-Art (SOTA) Models:** Out-of-the-box availability for top-tier models including **Kimi K2.5, Minimax M2.5, GLM 5, Deepseek V3.2**, and more.
-- 🏢 **Reliable Providers:** We route requests securely through trusted, high-performance platforms like **NVIDIA, Groq, OpenRouter, OpenCode Zen, and Google**.
+- 🏢 **Reliable Providers:** We route requests securely through trusted, high-performance platforms like **NVIDIA, Groq, OpenRouter, OpenCode Zen, Ollama, and Google**.
 - ⚡ **Lightning Fast:** The built-in benchmark continually evaluates metrics to pick the fastest and most capable LLM for your request.
 - 🔄 **OpenAI-Compatible:** A perfect drop-in replacement that works seamlessly with your existing tools, scripts, and workflows.
 
@@ -212,8 +212,11 @@ Example:
   - `GROQ_API_KEY`
   - `CEREBRAS_API_KEY`
   - `SAMBANOVA_API_KEY`
-  - `OPENROUTER_API_KEY`
-  - `OPENCODE_API_KEY`
+- `OPENROUTER_API_KEY`
+- `OPENCODE_API_KEY`
+- `OLLAMA_API_KEY`
+- `OLLAMA_BASE_URL`
+- `OLLAMA_MODEL`
   - `CODESTRAL_API_KEY`
   - `HYPERBOLIC_API_KEY`
   - `SCALEWAY_API_KEY`
@@ -223,6 +226,11 @@ Example:
 For `Qwen Code`, modelrelay supports both API keys and Qwen OAuth cached credentials (`~/.qwen/oauth_creds.json`).
 If OAuth credentials exist, modelrelay will use them and refresh access tokens automatically.
 You can also start OAuth directly from the Web UI Providers tab using `Login with Qwen Code`.
+
+For hosted Ollama, set `OLLAMA_API_KEY` and optionally override `OLLAMA_BASE_URL` / `OLLAMA_MODEL`.
+If you leave the Ollama base URL blank in the UI, modelrelay defaults to `https://ollama.com/v1`.
+With a valid Ollama API key, modelrelay will discover available Ollama models automatically.
+If you point Ollama at a local host such as `http://127.0.0.1:11434`, modelrelay will also auto-discover models and does not require an API key.
 
 ### Config migration (CLI + Web UI)
 

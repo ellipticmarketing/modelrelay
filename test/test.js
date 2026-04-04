@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 
-import { sources, MODELS, canonicalizeModelId, getPreferredModelLabel } from '../sources.js'
+import { sources, MODELS, canonicalizeModelId, getPreferredModelLabel, getScore, resolveAliasedModelId } from '../sources.js'
 import {
   getAvg,
   getVerdict,
@@ -25,7 +25,7 @@ import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autos
 import { exportConfigToken, getApiKey, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, importConfigToken } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { isQwenOauthAccessTokenValid, pollQwenOauthDeviceToken, resolveQwenCodeOauthAccessToken, startQwenOauthDeviceLogin } from '../lib/qwencodeAuth.js'
-import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
+import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, extractOllamaModelRecords, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOllamaModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -124,6 +124,12 @@ describe('sources data integrity', () => {
     assert.ok(sources['openai-compatible'])
     assert.equal(sources['openai-compatible'].name, 'OpenAI-Compatible')
     assert.ok(Array.isArray(sources['openai-compatible'].models))
+  })
+
+  it('includes Ollama provider', () => {
+    assert.ok(sources.ollama)
+    assert.equal(sources.ollama.name, 'Ollama')
+    assert.ok(Array.isArray(sources.ollama.models))
   })
 
   it('includes OpenCode Zen provider', () => {
@@ -257,6 +263,56 @@ describe('provider api key resolution', () => {
     }
   })
 
+  it('supports Ollama provider env vars for key, base URL, and model', () => {
+    const originalKey = process.env.OLLAMA_API_KEY
+    const originalBaseUrl = process.env.OLLAMA_BASE_URL
+    const originalModel = process.env.OLLAMA_MODEL
+
+    try {
+      delete process.env.OLLAMA_API_KEY
+      delete process.env.OLLAMA_BASE_URL
+      delete process.env.OLLAMA_MODEL
+
+      const config = {
+        apiKeys: { ollama: 'config-key' },
+        providers: { ollama: { baseUrl: 'https://ollama.com/v1', modelId: 'gpt-oss:120b' } },
+      }
+
+      assert.equal(getApiKey(config, 'ollama'), 'config-key')
+      assert.equal(getProviderBaseUrl(config, 'ollama'), 'https://ollama.com/v1')
+      assert.equal(getProviderModelId(config, 'ollama'), 'gpt-oss:120b')
+
+      process.env.OLLAMA_API_KEY = 'env-key'
+      process.env.OLLAMA_BASE_URL = 'https://ollama.com/v1'
+      process.env.OLLAMA_MODEL = 'llama3.3'
+
+      assert.equal(getApiKey(config, 'ollama'), 'env-key')
+      assert.equal(getProviderBaseUrl(config, 'ollama'), 'https://ollama.com/v1')
+      assert.equal(getProviderModelId(config, 'ollama'), 'llama3.3')
+    } finally {
+      if (originalKey == null) delete process.env.OLLAMA_API_KEY
+      else process.env.OLLAMA_API_KEY = originalKey
+
+      if (originalBaseUrl == null) delete process.env.OLLAMA_BASE_URL
+      else process.env.OLLAMA_BASE_URL = originalBaseUrl
+
+      if (originalModel == null) delete process.env.OLLAMA_MODEL
+      else process.env.OLLAMA_MODEL = originalModel
+    }
+  })
+
+  it('uses Ollama cloud base URL when none is configured', () => {
+    const originalBaseUrl = process.env.OLLAMA_BASE_URL
+
+    try {
+      delete process.env.OLLAMA_BASE_URL
+      assert.equal(getProviderBaseUrl({ providers: { ollama: {} } }, 'ollama'), null)
+    } finally {
+      if (originalBaseUrl == null) delete process.env.OLLAMA_BASE_URL
+      else process.env.OLLAMA_BASE_URL = originalBaseUrl
+    }
+  })
+
   it('supports OpenCode provider env var override', () => {
     const original = process.env.OPENCODE_API_KEY
 
@@ -273,19 +329,25 @@ describe('provider api key resolution', () => {
     }
   })
 
-  it('treats OpenCode and KiloCode auth as optional bearer auth providers', () => {
+  it('treats OpenCode and KiloCode auth as optional bearer auth providers, and local Ollama as optional', () => {
     assert.equal(isProviderAuthOptional({}, 'opencode'), true)
     assert.equal(isProviderAuthOptional({}, 'kilocode'), true)
+    assert.equal(isProviderAuthOptional({}, 'ollama'), false)
+    assert.equal(isProviderAuthOptional({ providers: { ollama: { baseUrl: 'http://127.0.0.1:11434' } } }, 'ollama'), true)
+    assert.equal(isProviderAuthOptional({ providers: { ollama: { baseUrl: 'http://localhost:11434' } } }, 'ollama'), true)
     assert.equal(isProviderAuthOptional({}, 'openrouter'), false)
 
     assert.equal(isProviderBearerAuthEnabled({}, 'opencode'), true)
     assert.equal(isProviderBearerAuthEnabled({}, 'kilocode'), true)
+    assert.equal(isProviderBearerAuthEnabled({}, 'ollama'), true)
     assert.equal(isProviderBearerAuthEnabled({ providers: { opencode: { useBearerAuth: false } } }, 'opencode'), false)
     assert.equal(isProviderBearerAuthEnabled({ providers: { kilocode: { useBearerAuth: false } } }, 'kilocode'), false)
+    assert.equal(isProviderBearerAuthEnabled({ providers: { ollama: { useBearerAuth: false } } }, 'ollama'), true)
 
     assert.equal(providerWantsBearerAuth({}, 'opencode'), true)
     assert.equal(providerWantsBearerAuth({ providers: { opencode: { useBearerAuth: false } } }, 'opencode'), false)
     assert.equal(providerWantsBearerAuth({ providers: { kilocode: { useBearerAuth: false } } }, 'kilocode'), false)
+    assert.equal(providerWantsBearerAuth({ providers: { ollama: { useBearerAuth: false } } }, 'ollama'), true)
     assert.equal(providerWantsBearerAuth({}, 'openrouter'), true)
   })
 
@@ -355,6 +417,105 @@ describe('provider api key resolution', () => {
 })
 
 describe('dynamic model score resolution', () => {
+  it('extracts Ollama model records from tags payloads', () => {
+    const payload = {
+      models: [
+        { name: 'gpt-oss:120b', model: 'gpt-oss:120b' },
+        { name: 'llama3.3', model: 'llama3.3' },
+      ],
+    }
+
+    assert.deepEqual(extractOllamaModelRecords(payload), payload.models)
+    assert.deepEqual(extractOllamaModelRecords(null), [])
+  })
+
+  it('uses scores.js entries for Ollama models when available', () => {
+    const model = toOllamaModelMeta({
+      name: 'openai/gpt-oss-120b',
+      model: 'openai/gpt-oss-120b',
+    })
+
+    assert.ok(model)
+    assert.equal(model.providerKey, 'ollama')
+    assert.equal(model.label, 'GPT OSS 120B')
+    assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('maps Ollama-style aliases like qwen3:4b to existing score entries', () => {
+    assert.equal(resolveAliasedModelId('qwen3:4b'), 'qwen/qwen3-4b')
+    assert.equal(getScore('qwen3:4b'), 0.542)
+
+    const model = toOllamaModelMeta({
+      name: 'qwen3:4b',
+      model: 'qwen3:4b',
+      details: { family: 'qwen3', parameter_size: '4.0B' },
+    })
+
+    assert.ok(model)
+    assert.equal(model.label, 'Qwen3:4b')
+    assert.equal(model.intell, 0.542)
+    assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('maps Devstral Small 2 Ollama IDs to a verified score entry', () => {
+    assert.equal(resolveAliasedModelId('devstral-small-2:24b'), 'devstral-small-2-24b')
+    assert.equal(getScore('devstral-small-2:24b'), 0.658)
+
+    const model = toOllamaModelMeta({
+      name: 'devstral-small-2:24b',
+      model: 'devstral-small-2:24b',
+    })
+
+    assert.ok(model)
+    assert.equal(model.label, 'Devstral Small 2 24B')
+    assert.equal(model.intell, 0.658)
+    assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('maps common Ollama cloud aliases onto existing benchmark entries', () => {
+    assert.equal(getScore('deepseek-v3.2'), 0.731)
+    assert.equal(getScore('cogito-2.1:671b'), 0.42)
+    assert.equal(getScore('gemma3:4b'), 0.428)
+    assert.equal(getScore('glm-5'), 0.778)
+    assert.equal(getScore('kimi-k2.5'), 0.768)
+    assert.equal(getScore('mimo-v2-pro-free'), 0.78)
+    assert.equal(getScore('minimax-m2.5-free'), 0.802)
+    assert.equal(getScore('ministral-3:3b'), 0.548)
+    assert.equal(getScore('ministral-3:8b'), 0.616)
+    assert.equal(getScore('mistral-large-3:675b'), 0.58)
+    assert.equal(getScore('nemotron-3-super'), 0.6047)
+    assert.equal(getScore('qwen/qwen3.6-plus-preview:free'), 0.68)
+    assert.equal(getScore('qwen3-vl:235b'), 0.7)
+    assert.equal(getScore('qwen3-vl:235b-instruct'), 0.7)
+    assert.equal(getScore('qwen3-coder:480b'), 0.706)
+    assert.equal(getScore('qwen3-next:80b'), 0.65)
+    assert.equal(getScore('qwen3.5:397b'), 0.68)
+  })
+
+  it('applies direct score entries for new cloud-only models we track explicitly', () => {
+    assert.equal(getScore('gemini-3-flash-preview'), 0.78)
+    assert.equal(getScore('qwen3-coder-next'), 0.706)
+    assert.equal(getScore('rnj-1:8b'), 0.208)
+  })
+
+  it('maps Ollama cloud remote models to canonical score entries', () => {
+    const model = toOllamaModelMeta({
+      name: 'Minimax-m2.7:cloud',
+      model: 'Minimax-m2.7:cloud',
+      remote_model: 'minimax-m2.7',
+    })
+
+    assert.ok(model)
+    assert.equal(model.intell, 0.822)
+    assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('keeps MiniMax M-series SWE scores monotonic as versions increase', () => {
+    assert.ok(getScore('minimax-m2') < getScore('minimax-m2.1'))
+    assert.ok(getScore('minimax-m2.1') < getScore('minimax-m2.5'))
+    assert.ok(getScore('minimax-m2.5') < getScore('minimax-m2.7'))
+  })
+
   it('uses scores.js entry for OpenRouter models outside static sources', () => {
     const model = toOpenRouterModelMeta({
       id: 'google/gemma-3n-e2b-it:free',
@@ -400,8 +561,30 @@ describe('dynamic model score resolution', () => {
     assert.equal(model.isEstimatedScore, false)
   })
 
-  it('ignores OpenCode Zen models that are not chat-completions compatible', () => {
+  it('includes OpenCode Zen free models that end with -free', () => {
+    const qwen = toOpenCodeModelMeta({ id: 'qwen3.6-plus-free' })
+    const trinity = toOpenCodeModelMeta({ id: 'trinity-large-preview-free' })
+    const flash = toOpenCodeModelMeta({ id: 'mimo-v2-flash-free' })
+
+    assert.ok(qwen)
+    assert.equal(qwen.intell, 0.68)
+    assert.equal(qwen.isEstimatedScore, false)
+
+    assert.ok(trinity)
+    assert.equal(trinity.intell, 0.778)
+    assert.equal(trinity.isEstimatedScore, false)
+
+    assert.ok(flash)
+    assert.equal(flash.intell, 0.734)
+    assert.equal(flash.isEstimatedScore, false)
+  })
+
+  it('ignores OpenCode Zen models that are not free/chat-compatible for routing', () => {
     assert.equal(toOpenCodeModelMeta({ id: 'gpt-5.4' }), null)
+    assert.equal(toOpenCodeModelMeta({ id: 'big-pickle' }), null)
+    assert.equal(toOpenCodeModelMeta({ id: 'glm-5' }), null)
+    assert.equal(toOpenCodeModelMeta({ id: 'kimi-k2' }), null)
+    assert.equal(toOpenCodeModelMeta({ id: 'minimax-m2.5' }), null)
   })
 
   it('applies preferred MiMo display labels', () => {
@@ -411,6 +594,14 @@ describe('dynamic model score resolution', () => {
     assert.equal(getPreferredModelLabel('x-ai/grok-code-fast-1:optimized:free'), 'Grok Code Fast')
     assert.equal(getPreferredModelLabel('minimax-m2.5-free', 'MiniMax M2.5 Free'), 'MiniMax M2.5')
     assert.equal(getPreferredModelLabel('nemotron-3-super-free', 'Nemotron 3 Super Free'), 'Nemotron 3 Super')
+  })
+
+  it('preserves Ollama size tags while stripping runtime suffixes', () => {
+    assert.deepEqual(canonicalizeModelId('devstral-small-2:24b'), { base: 'devstral-small-2-24b', unprefixed: 'devstral-small-2-24b' })
+    assert.deepEqual(canonicalizeModelId('qwen3:4b'), { base: 'qwen/qwen3-4b', unprefixed: 'qwen3-4b' })
+    assert.deepEqual(canonicalizeModelId('gpt-oss:120b'), { base: 'openai/gpt-oss-120b', unprefixed: 'gpt-oss-120b' })
+    assert.deepEqual(canonicalizeModelId('Minimax-m2.7:cloud'), { base: 'minimax-m2.7', unprefixed: 'minimax-m2.7' })
+    assert.deepEqual(canonicalizeModelId('x-ai/grok-code-fast-1:optimized:free'), { base: 'x-ai/grok-code-fast-1', unprefixed: 'grok-code-fast-1' })
   })
 })
 

@@ -7,29 +7,93 @@
 import { scores } from './scores.js'
 
 export const MODEL_ID_ALIASES = {
+  'cogito-2.1:671b': 'cogito-2.1:671b',
+  'deepseek-v3.1:671b': 'deepseek-ai/deepseek-v3.1',
+  'deepseek-v3.2': 'deepseek-ai/deepseek-v3.2',
+  'devstral-2:123b': 'devstral-2-123b-instruct-2512',
   'mimo-v2-omni-free': 'xiaomi/mimo-v2-omni:free',
-  'Qwen3-32B': 'qwen3-32b',
-  'mistralai/Mixtral-8x22B-Instruct-v0.1': 'mistralai/mixtral-8x22b-instruct-v0.1',
-  'moonshotai/Kimi-K2-Instruct': 'moonshotai/kimi-k2-instruct',
-  'Qwen/Qwen3-235B-A22B': 'qwen/qwen3-235b-a22b',
-  'Qwen/Qwen2.5-Coder-32B-Instruct': 'qwen/qwen2.5-coder-32b-instruct',
-  'meta-llama/Llama-3.3-70B-Instruct': 'meta-llama/llama-3.3-70b-instruct',
-  'zai/glm-4.5-air': 'z-ai/glm-4.5-air',
-  'Qwen/Qwen3-Coder-480B-A35B-Instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
-  'deepseek-ai/DeepSeek-V3.2': 'deepseek-ai/deepseek-v3.2',
-  'deepseek-ai/DeepSeek-R1': 'deepseek-ai/deepseek-r1',
-  'Qwen/Qwen3-Coder-30B-A3B-Instruct': 'qwen/qwen3-coder-30b-a3b-instruct',
-  'moonshotai/Kimi-K2.5': 'moonshotai/kimi-k2.5',
-  'deepseek-ai/DeepSeek-V3.1': 'deepseek-ai/deepseek-v3.1',
-  'meta-llama/Llama-3.3-70B-Instruct-Turbo': 'meta-llama/llama-3.3-70b-instruct',
-  '@cf/qwen/qwen2.5-coder-32b-instruct': 'qwen/qwen2.5-coder-32b-instruct',
-  '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': 'deepseek-ai/deepseek-r1-distill-qwen-32b',
-  '@cf/openai/gpt-oss-20b': 'openai/gpt-oss-20b',
-  'TBStars2-200B-A13B': 'tbstars2-200b-a13b',
+  'devstral-small-2': 'devstral-small-2-24b',
+  'devstral-small-2:24b': 'devstral-small-2-24b',
+  'devstral-small-2:24b-instruct-2512-q4_k_m': 'devstral-small-2-24b',
+  'gemma3:4b': 'gemma-3-4b-it',
+  'gemma3:12b': 'gemma-3-12b-it',
+  'gemma3:27b': 'gemma-3-27b-it',
+  'glm-4.7': 'z-ai/glm4.7',
+  'glm-4.6': 'glm-4.6',
+  'glm-5': 'z-ai/glm5',
+  'kimi-k2': 'moonshotai/kimi-k2-instruct',
+  'kimi-k2-thinking': 'moonshotai/kimi-k2-thinking',
+  'kimi-k2.5': 'moonshotai/kimi-k2.5',
+  'kimi-k2:1t': 'moonshotai/kimi-k2-instruct',
+  'mimo-v2-flash-free': 'mimo-v2-flash-free',
+  'mimo-v2-pro-free': 'xiaomi/mimo-v2-pro',
+  'qwen3:4b': 'qwen/qwen3-4b',
+  'qwen3:32b': 'qwen/qwen3-32b',
+  'gpt-oss:120b': 'openai/gpt-oss-120b',
+  'gpt-oss:20b': 'openai/gpt-oss-20b',
+  'minimax-m2': 'minimaxai/minimax-m2',
+  'minimax-m2.1': 'minimaxai/minimax-m2.1',
+  'minimax-m2.5': 'minimax/minimax-m2.5',
+  'minimax-m2.5-free': 'minimax/minimax-m2.5',
+  'minimax-m2.7:cloud': 'minimax-m2.7',
+  'minimax-m2.7': 'minimax-m2.7',
+  'ministral-3:3b': 'ministral-3:3b',
+  'ministral-3:8b': 'ministral-3:8b',
+  'ministral-3:14b': 'mistralai/ministral-14b-instruct-2512',
+  'mistral-large-3:675b': 'mistralai/mistral-large-3-675b-instruct-2512',
+  'nemotron-3-nano:30b': 'nvidia/nemotron-3-nano-30b-a3b',
+  'nemotron-3-super': 'nvidia/nemotron-3-super-120b-a12b',
+  'nemotron-3-super-free': 'nvidia/nemotron-3-super-120b-a12b',
+  'qwen3.6-plus-free': 'qwen/qwen3.5-397b-a17b',
+  'qwen/qwen3.6-plus-preview:free': 'qwen/qwen3.5-397b-a17b',
+  'qwen3-vl:235b': 'qwen/qwen3-vl-235b-a22b',
+  'qwen3-vl:235b-instruct': 'qwen/qwen3-vl-235b-a22b',
+  'qwen3-coder-next': 'qwen3-coder-next',
+  'qwen3-coder:480b': 'qwen/qwen3-coder-480b-a35b-instruct',
+  'qwen3-next:80b': 'qwen/qwen3-next-80b-a3b-instruct',
+  'qwen3.5:397b': 'qwen/qwen3.5-397b-a17b',
+  'rnj-1:8b': 'rnj-1:8b',
+  'trinity-large-preview-free': 'arcee-ai/trinity-large-preview',
 }
 
 export const MODEL_LABEL_OVERRIDES = {
+  'deepseek-v3.1:671b': 'DeepSeek V3.1',
+  'deepseek-v3.2': 'DeepSeek V3.2',
+  'devstral-2:123b': 'Devstral 2 123B',
+  'devstral-small-2': 'Devstral Small 2 24B',
+  'devstral-small-2:24b': 'Devstral Small 2 24B',
+  'devstral-small-2-24b': 'Devstral Small 2 24B',
+  'gemma3:4b': 'Gemma 3 4B',
+  'gemma3:12b': 'Gemma 3 12B',
+  'gemma3:27b': 'Gemma 3 27B',
+  'glm-4.6': 'GLM 4.6',
+  'glm-4.7': 'GLM 4.7',
+  'glm-5': 'GLM 5',
+  'kimi-k2': 'Kimi K2',
+  'kimi-k2-thinking': 'Kimi K2 Thinking',
+  'kimi-k2.5': 'Kimi K2.5',
+  'kimi-k2:1t': 'Kimi K2 Instruct',
+  'mimo-v2-flash-free': 'MiMo V2 Flash',
+  'mimo-v2-pro-free': 'MiMo V2 Omni Pro',
   'mimo-v2-omni-free': 'MiMo V2 Omni',
+  'minimax-m2.5-free': 'MiniMax M2.5',
+  'ministral-3:3b': 'Ministral 3 3B',
+  'ministral-3:8b': 'Ministral 3 8B',
+  'ministral-3:14b': 'Ministral 14B',
+  'mistral-large-3:675b': 'Mistral Large 675B',
+  'nemotron-3-nano:30b': 'Nemotron Nano 30B',
+  'nemotron-3-super': 'Nemotron 3 Super',
+  'nemotron-3-super-free': 'Nemotron 3 Super',
+  'qwen3.6-plus-free': 'Qwen3.6 Plus',
+  'qwen/qwen3.6-plus-preview:free': 'Qwen3.6 Plus Preview',
+  'qwen3-vl:235b': 'Qwen3 VL 235B',
+  'qwen3-vl:235b-instruct': 'Qwen3 VL 235B',
+  'qwen3-coder-next': 'Qwen3 Coder Next',
+  'qwen3-coder:480b': 'Qwen3 Coder 480B',
+  'qwen3-next:80b': 'Qwen3 Next 80B',
+  'qwen3.5:397b': 'Qwen3.5 400B',
+  'rnj-1:8b': 'RNJ-1 8B',
+  'trinity-large-preview-free': 'Trinity Large Preview',
   'xiaomi/mimo-v2-omni:free': 'MiMo V2 Omni',
   'xiaomi/mimo-v2-pro:free': 'MiMo V2 Omni Pro',
   'x-ai/grok-code-fast-1:optimized:free': 'Grok Code Fast',
@@ -38,7 +102,7 @@ export const MODEL_LABEL_OVERRIDES = {
 export function resolveAliasedModelId(modelId) {
   const raw = typeof modelId === 'string' ? modelId.trim() : ''
   if (!raw) return ''
-  return MODEL_ID_ALIASES[raw] || raw
+  return MODEL_ID_ALIASES[raw] || MODEL_ID_ALIASES[raw.toLowerCase()] || raw
 }
 
 export function cleanModelDisplayLabel(label) {
@@ -53,7 +117,9 @@ export function cleanModelDisplayLabel(label) {
 
 export function canonicalizeModelId(modelId) {
   const resolved = resolveAliasedModelId(modelId)
-  const base = resolved.replace(/(?::[a-z0-9-]+)+$/i, '');
+  // 1. Remove known runtime suffixes like :free, :optimized:free, or :cloud
+  const base = resolved.replace(/(?::(?:free|optimized|cloud))+$/i, '');
+  // 2. Remove provider prefix like google/
   const unprefixed = base.includes('/') ? base.split('/').pop() : base;
   return { base, unprefixed };
 }
@@ -169,13 +235,18 @@ export const sources = {
       ["Meta-Llama-3.1-8B-Instruct", "Llama 3.1 8B", "128k"]
     ]
   },
+  "ollama": {
+    "name": "Ollama",
+    "url": "",
+    "models": []
+  },
   "openrouter": {
     "name": "OpenRouter",
     "url": "https://openrouter.ai/api/v1/chat/completions",
     "models": [
-      ["qwen/qwen3-coder:free", "Qwen3 Coder 480B", "256k"],
-      ["z-ai/glm-4.5-air:free", "GLM 4.5 Air", "128k"],
-      ["google/gemma-3-27b-it:free", "Gemma 3 27B", "128k"],
+      ["qwen/qwen3-coder:free", "Qwen3 Coder", "256k"],
+      ["xiaomi/mimo-v2-pro:free", "MiMo V2 Omni Pro", "1M"],
+      ["xiaomi/mimo-v2-omni:free", "MiMo V2 Omni", "1M"],
       ["stepfun/step-3.5-flash:free", "Step 3.5 Flash", "256k"],
       ["qwen/qwen3-next-80b-a3b-instruct:free", "Qwen3 80B Instruct", "128k"],
       ["openai/gpt-oss-120b:free", "GPT OSS 120B", "128k"],

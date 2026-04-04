@@ -26,7 +26,7 @@ Do not bump the major version.
 3. **Commit ALL Changed Files**: `git add . && git commit -m "Fixed issue with autostart"`
    - Always commit using a description of what was changed as the commit message. 
    - Include ALL modified files in the commit (bin/, lib/, test/, README.md, etc.)
-4. **Push**: `git push origin main` — GitHub Actions will auto-publish to npm
+4. **Push**: `git push origin master` — this repo's release branch is `master`, and GitHub Actions will auto-publish to npm
 5. **Create GitHub Release**:
    ```bash
    gh release create VERSION --title "VERSION" --notes "Release notes"
@@ -48,7 +48,7 @@ Do not bump the major version.
 **Never trust local-only testing.** `pnpm start` runs from the repo and won't catch missing files in the published package. Always run the full npm verification:
 
 1. Bump version in `package.json` (e.g. `0.1.14` → `0.1.15`)
-2. Commit and push to `main` — GitHub Actions auto-publishes to npm
+2. Commit and push to `master` — this repo's release branch is `master`, and GitHub Actions auto-publishes to npm
 3. Wait for the new version to appear on npm:
    ```bash
    # Poll until npm has the new version

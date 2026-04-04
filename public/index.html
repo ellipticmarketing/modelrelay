@@ -1392,6 +1392,56 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .provider-model-refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .provider-model-refresh-btn:hover {
+      background: #eef2f7;
+      border-color: #cbd5e1;
+    }
+
+    .provider-model-refresh-btn:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .provider-model-refresh-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .provider-model-refresh-btn.is-loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    .sync-result-list {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    .sync-result-list li {
+      color: var(--text);
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
   </style>
 </head>
 
@@ -1407,6 +1457,7 @@
   </div>
 
   <div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+  <div class="drawer-overlay" id="provider-sync-overlay" onclick="closeProviderSyncModal()" style="display:none;"></div>
 
   <div class="container">
     <div class="dashboard-header">
@@ -1794,6 +1845,17 @@
     <div id="drawer-content"></div>
   </div>
 
+  <div id="provider-sync-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:min(720px, calc(100vw - 32px)); max-height:min(80vh, 760px); background:#fff; border:1px solid var(--border); border-radius:18px; box-shadow:0 24px 80px rgba(15, 23, 42, 0.22); z-index:1001; overflow:hidden;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:20px 22px 14px; border-bottom:1px solid var(--border);">
+      <div>
+        <div id="provider-sync-title" style="font-size:1.05rem; font-weight:700; color:var(--text);">Provider Model Refresh</div>
+        <div id="provider-sync-subtitle" style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;"></div>
+      </div>
+      <button onclick="closeProviderSyncModal()" style="border:none; background:#f3f4f6; cursor:pointer; width:32px; height:32px; border-radius:999px; font-size:1.2rem; line-height:1;">&times;</button>
+    </div>
+    <div id="provider-sync-body" style="padding:18px 22px 22px; overflow:auto; max-height:calc(80vh - 84px);"></div>
+  </div>
+
   <script>
     let allModels = [];
     let searchTerm = '';
@@ -1813,6 +1875,7 @@
     let qwenOauthSessionId = null;
     let qwenOauthPollTimer = null;
     let filterRules = { minSweScore: null, excludedProviders: [] };
+    let providerRefreshInFlight = new Set();
     let chatMessages = [];
     let chatInFlight = false;
     let chatSelectedModel = 'auto-fastest';
@@ -3036,6 +3099,82 @@
       });
     }
 
+    function closeProviderSyncModal() {
+      const overlay = document.getElementById('provider-sync-overlay');
+      const modal = document.getElementById('provider-sync-modal');
+      if (overlay) overlay.style.display = 'none';
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openProviderSyncModal(title, subtitle, bodyHtml) {
+      const overlay = document.getElementById('provider-sync-overlay');
+      const modal = document.getElementById('provider-sync-modal');
+      const titleEl = document.getElementById('provider-sync-title');
+      const subtitleEl = document.getElementById('provider-sync-subtitle');
+      const bodyEl = document.getElementById('provider-sync-body');
+      if (!overlay || !modal || !titleEl || !subtitleEl || !bodyEl) return;
+      titleEl.textContent = title;
+      subtitleEl.textContent = subtitle || '';
+      bodyEl.innerHTML = bodyHtml || '';
+      overlay.style.display = 'block';
+      modal.style.display = 'block';
+    }
+
+    function formatSyncScore(model) {
+      if (typeof model?.intell !== 'number' || !Number.isFinite(model.intell)) return 'Unknown';
+      return `${Math.round(model.intell * 100)}%${model.isEstimatedScore ? ' estimated' : ''}`;
+    }
+
+    function renderProviderSyncSuccess(providerName, models) {
+      const count = models.length;
+      const items = models
+        .slice()
+        .sort((a, b) => (a.label || a.modelId || '').localeCompare(b.label || b.modelId || ''))
+        .map(model => `<li><b>${escapeHtml(model.label || model.modelId)}</b><br><span style="color:var(--text-muted);">${escapeHtml(model.modelId)} • ${escapeHtml(model.ctx || '128k')} • SWE ${escapeHtml(formatSyncScore(model))}</span></li>`)
+        .join('');
+
+      openProviderSyncModal(
+        `${providerName} Model Sync`,
+        `${count} model${count === 1 ? '' : 's'} returned`,
+        count > 0
+          ? `<ol class="sync-result-list">${items}</ol>`
+          : `<div style="font-size:0.84rem; color:var(--text-muted);">The provider returned no models.</div>`
+      );
+    }
+
+    function renderProviderSyncError(providerName, errorMessage) {
+      openProviderSyncModal(
+        `${providerName} Model Sync`,
+        'Refresh failed',
+        `<div style="padding:14px 16px; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; color:#7f1d1d; font-size:0.84rem; line-height:1.5; white-space:pre-wrap; word-break:break-word;">${escapeHtml(errorMessage || 'Unknown error.')}</div>`
+      );
+    }
+
+    async function refreshProviderModels(key, providerName) {
+      if (!key || providerRefreshInFlight.has(key)) return;
+      providerRefreshInFlight.add(key);
+      await loadSettings();
+
+      try {
+        const res = await fetch(`/api/providers/${encodeURIComponent(key)}/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          throw new Error(data.error || `Failed to refresh ${providerName} models.`);
+        }
+
+        await fetchData();
+        renderProviderSyncSuccess(providerName, Array.isArray(data.models) ? data.models : []);
+      } catch (err) {
+        renderProviderSyncError(providerName, err.message || `Failed to refresh ${providerName} models.`);
+      } finally {
+        providerRefreshInFlight.delete(key);
+        await loadSettings();
+      }
+    }
+
     async function saveFilterRules() {
       const minSweInput = document.getElementById('min-swe-score');
       const minSweValue = minSweInput.value.trim();
@@ -3230,14 +3369,14 @@
               </div>`;
           }
 
-          const openAiCompatibleFieldsHtml = p.key === 'openai-compatible' ? `
+          const openAiCompatibleFieldsHtml = (p.key === 'openai-compatible' || p.key === 'ollama') ? `
             <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-              <input type="text" id="base-url-${p.key}" value="${escapeHtml(p.baseUrl || '')}" placeholder="https://your-endpoint.example/v1" style="flex:1;" onblur="updateProviderBaseUrl('${p.key}')">
+              <input type="text" id="base-url-${p.key}" value="${escapeHtml(p.baseUrl || '')}" placeholder="${p.key === 'ollama' ? 'https://ollama.com/v1' : 'https://your-endpoint.example/v1'}" style="flex:1;" onblur="updateProviderBaseUrl('${p.key}')">
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
               <input type="text" id="model-id-${p.key}" value="${escapeHtml(p.modelId || '')}" placeholder="upstream-model-id" style="flex:1;" onblur="updateProviderModelId('${p.key}')">
             </div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Set the upstream base URL and exact model ID for this provider.</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Set the upstream base URL and exact model ID for this provider.${p.key === 'ollama' ? ' If base URL is blank, modelrelay uses https://ollama.com/v1 and expects an OLLAMA_API_KEY.' : ''}</div>
           ` : '';
 
           const qwenAuthActionsHtml = p.key === 'qwencode' ? `
@@ -3257,13 +3396,20 @@
           ` : '';
 
           const section = document.createElement('div');
+          const isRefreshing = providerRefreshInFlight.has(p.key);
           section.className = 'provider-section';
           section.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
               <div style="display:flex; align-items:center; gap:10px;">
                 <span style="background:${statusBg}; color:${statusColor}; border-radius:999px; padding:2px 10px; font-size:0.75rem; font-weight:600;">${statusIcon} ${statusText}</span>
                 <h3 style="margin:0; font-size:1rem;">${p.name}</h3>
-                ${modelCount > 0 ? `<span style="background:#f3f2f1; color:var(--text-muted); border-radius:999px; padding:2px 8px; font-size:0.72rem; font-weight:600;">${modelCount} model${modelCount !== 1 ? 's' : ''}</span>` : ''}
+                <button class="provider-model-refresh-btn ${isRefreshing ? 'is-loading' : ''}" ${isRefreshing ? 'disabled' : ''} onclick='refreshProviderModels(${JSON.stringify(p.key)}, ${JSON.stringify(p.name)})' title="Refresh provider models">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                    <polyline points="21 3 21 9 15 9"></polyline>
+                  </svg>
+                  <span>${isRefreshing ? 'Refreshing…' : `${modelCount} model${modelCount !== 1 ? 's' : ''}`}</span>
+                </button>
                 ${p.signupUrl ? `<a href="${p.signupUrl}" target="_blank" rel="noopener noreferrer" style="font-size:0.78rem; color:var(--accent); text-decoration:none; font-weight:600;">Get API key</a>` : ''}
               </div>
               <div style="display:flex; align-items:center; gap:10px;">
