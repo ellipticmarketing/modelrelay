@@ -21,7 +21,7 @@ jobs:
           git remote add upstream https://github.com/ellipticmarketing/modelrelay.git
           git fetch upstream
           git checkout master
-          git merge upstream/master --allow-unrelated-histories -m "chore: sync with upstream"
+          git merge -X theirs upstream/master --allow-unrelated-histories -m "chore: sync with upstream"
           git push origin master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
