@@ -2,20 +2,24 @@ name: Sync Fork
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Runs at 2 AM UTC every day
-  workflow_dispatch:  # Allows manual triggering
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the fork
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full history, not a shallow clone
 
       - name: Sync with upstream
         run: |
           git remote add upstream https://github.com/ellipticmarketing/modelrelay.git
           git fetch upstream
           git checkout master
-          git merge upstream/master
+          git merge upstream/master --allow-unrelated-histories -m "chore: sync with upstream"
           git push origin master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
