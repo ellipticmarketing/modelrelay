@@ -3423,11 +3423,11 @@
               <input type="number" id="ping-interval-${p.key}" min="1" step="1" value="${p.pingIntervalMinutes || ''}" placeholder="30" style="width:70px; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem;" onchange="updateProviderPingInterval('${p.key}')">
               <span style="font-size:0.75rem; color:var(--text-muted);">(default: 30)</span>
             </div>
-            ${p.hasMultipleKeys ? `
+            ${(Array.isArray(p.apiKeyPool) && p.apiKeyPool.length > 0) ? `
             <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border:1px solid var(--border); border-radius:10px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <span style="font-size:0.8rem; font-weight:700; color:var(--text);">Accounts (${p.apiKeyPool.length})</span>
-                <span style="font-size:0.7rem; color:var(--text-muted);">Round-robin active</span>
+                <span style="font-size:0.7rem; color:var(--text-muted);">${p.apiKeyPool.length > 1 ? 'Round-robin active' : 'Add one more key to enable round-robin'}</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
                 ${p.apiKeyPool.map((acct, i) => `
