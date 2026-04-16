@@ -1886,8 +1886,6 @@
     let logsViewMode = 'history';
     let logsAutoRefreshPaused = false;
     const PROVIDER_ERROR_MAX_AGE_MS = 120 * 60_000;
-    let qwenOauthSessionId = null;
-    let qwenOauthPollTimer = null;
     let filterRules = { minSweScore: null, excludedProviders: [] };
     let providerRefreshInFlight = new Set();
     let chatMessages = [];
@@ -3373,13 +3371,6 @@
             <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Set the upstream base URL and exact model ID for this provider.${p.key === 'ollama' ? ' If base URL is blank, modelrelay uses https://ollama.com/v1 and expects an OLLAMA_API_KEY.' : ''}</div>
           ` : '';
 
-          const qwenAuthActionsHtml = p.key === 'qwencode' ? `
-            <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <button onclick="startQwenOAuthLogin()" style="border:1px solid var(--border); background:#fff; cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Login with Qwen Code</button>
-              <span id="qwencode-login-status" style="font-size:0.75rem; color:var(--text-muted);"></span>
-            </div>
-          ` : '';
-
           const optionalBearerAuthHtml = (tokenOptional && p.hasKey) ? `
             <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; cursor:pointer;">
@@ -3452,7 +3443,6 @@
             ` : ''}
             ${optionalBearerAuthHtml}
             ${openAiCompatibleFieldsHtml}
-            ${qwenAuthActionsHtml}
             ${providerErrorHtml}
             ${rateLimitHtml}
           `;
@@ -3686,87 +3676,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ providerKey: key, useBearerAuth })
       });
-    }
-
-    function setQwenLoginStatus(message, isError = false) {
-      const statusEl = document.getElementById('qwencode-login-status');
-      if (!statusEl) return;
-      statusEl.style.color = isError ? 'var(--error)' : 'var(--text-muted)';
-      statusEl.textContent = message || '';
-    }
-
-    async function pollQwenOAuthLoginStatus() {
-      if (!qwenOauthSessionId) return;
-      try {
-        const res = await fetch(`/api/qwencode/login/status?sessionId=${encodeURIComponent(qwenOauthSessionId)}`);
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || 'Failed to fetch Qwen OAuth login status.');
-        }
-
-        const data = await res.json();
-        if (data.status === 'authorized') {
-          setQwenLoginStatus('Qwen OAuth connected.');
-          if (qwenOauthPollTimer) {
-            clearInterval(qwenOauthPollTimer);
-            qwenOauthPollTimer = null;
-          }
-          qwenOauthSessionId = null;
-          loadSettings();
-          fetchData();
-          return;
-        }
-
-        if (data.status === 'error') {
-          setQwenLoginStatus(data.error || 'Qwen OAuth login failed.', true);
-          if (qwenOauthPollTimer) {
-            clearInterval(qwenOauthPollTimer);
-            qwenOauthPollTimer = null;
-          }
-          qwenOauthSessionId = null;
-          return;
-        }
-
-        if (data.status === 'expired') {
-          setQwenLoginStatus('Qwen login session expired. Click Login again.', true);
-          if (qwenOauthPollTimer) {
-            clearInterval(qwenOauthPollTimer);
-            qwenOauthPollTimer = null;
-          }
-          qwenOauthSessionId = null;
-          return;
-        }
-
-        setQwenLoginStatus('Waiting for Qwen authorization...');
-      } catch (err) {
-        setQwenLoginStatus(err.message || 'Failed to poll Qwen OAuth status.', true);
-      }
-    }
-
-    async function startQwenOAuthLogin() {
-      try {
-        setQwenLoginStatus('Starting Qwen OAuth login...');
-        const res = await fetch('/api/qwencode/login/start', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to start Qwen OAuth login.');
-        }
-
-        qwenOauthSessionId = data.sessionId;
-        if (data.verificationUriComplete) {
-          window.open(data.verificationUriComplete, '_blank', 'noopener,noreferrer');
-        }
-
-        const codeSuffix = data.userCode ? ` (code: ${data.userCode})` : '';
-        setQwenLoginStatus(`Complete login in browser${codeSuffix}`);
-
-        if (qwenOauthPollTimer) clearInterval(qwenOauthPollTimer);
-        const pollMs = Number(data.pollIntervalMs) > 0 ? Number(data.pollIntervalMs) : 2000;
-        qwenOauthPollTimer = setInterval(pollQwenOAuthLoginStatus, pollMs);
-        pollQwenOAuthLoginStatus();
-      } catch (err) {
-        setQwenLoginStatus(err.message || 'Failed to start Qwen OAuth login.', true);
-      }
     }
 
     function loadChatState() {
