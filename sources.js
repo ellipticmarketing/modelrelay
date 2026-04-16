@@ -282,14 +282,6 @@ export const sources = {
       ["mistral-small-3.2-24b-instruct-2506", "Mistral Small 3.2", "128k"]
     ]
   },
-  "qwencode": {
-    "name": "Qwen Code",
-    "url": "https://coding.dashscope.aliyuncs.com/v1/chat/completions",
-    "models": [
-      ["coder-model", "Qwen Coder (OAuth)", "256k"],
-      ["vision-model", "Qwen Vision (OAuth)", "128k"]
-    ]
-  },
   "kilocode": {
     "name": "KiloCode",
     "url": "https://api.kilo.ai/api/gateway/chat/completions",
