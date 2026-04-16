@@ -18,6 +18,7 @@ import {
   isRetryableProxyStatus,
   parseArgs,
   parseOpenRouterKeyRateLimit,
+  selectNextApiKeyFromPool,
   VERDICT_ORDER,
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
@@ -1531,6 +1532,46 @@ describe('multi-account round-robin', () => {
     it('returns empty when pool state is not initialized', () => {
       const result = getAccountStatus({ apiKeys: { kilocode: ['k1', 'k2'] } })
       assert.deepEqual(result, { providers: {} })
+    })
+  })
+
+  describe('selectNextApiKeyFromPool', () => {
+    it('returns null when every key is still inside cooldown', () => {
+      const now = 1_000_000
+      const pool = ['key1', 'key2']
+      const entry = {
+        currentIdx: 0,
+        accounts: new Map([
+          [0, { requests: 1, rateLimitedAt: now - 10_000 }],
+          [1, { requests: 1, rateLimitedAt: now - 20_000 }],
+        ]),
+      }
+
+      const selected = selectNextApiKeyFromPool(pool, entry, 0, now, 60_000)
+
+      assert.equal(selected, null)
+      assert.equal(entry.currentIdx, 0)
+      assert.equal(entry.accounts.get(0).requests, 1)
+      assert.equal(entry.accounts.get(1).requests, 1)
+    })
+
+    it('resets counters when only maxTurns exhaustion blocks the pool', () => {
+      const now = 1_000_000
+      const pool = ['key1', 'key2']
+      const entry = {
+        currentIdx: 0,
+        accounts: new Map([
+          [0, { requests: 2, rateLimitedAt: 0 }],
+          [1, { requests: 2, rateLimitedAt: 0 }],
+        ]),
+      }
+
+      const selected = selectNextApiKeyFromPool(pool, entry, 2, now, 60_000)
+
+      assert.equal(selected, 'key1')
+      assert.equal(entry.currentIdx, 1)
+      assert.equal(entry.accounts.get(0).requests, 1)
+      assert.equal(entry.accounts.get(1).requests, 0)
     })
   })
 })
