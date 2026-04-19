@@ -12,12 +12,130 @@
       --bg: #fdfcfb;
       --card: #ffffff;
       --border: #eceae8;
+      --border-subtle: #e5e7eb;
       --text: #1a1918;
       --text-muted: #8c8985;
+      --text-dim: #64748b;
       --accent: #3b82f6;
       --success: #10b981;
       --warning: #f59e0b;
       --error: #ef4444;
+      --surface-alt: #f3f2f1;
+      --surface-hover: #eef2f7;
+      --input-bg: #ffffff;
+      --input-bg-alt: #f3f2f1;
+      --status-success-bg: #ecfdf5;
+      --status-success-text: #065f46;
+      --status-success-border: #a7f3d0;
+      --status-warning-bg: #fffbeb;
+      --status-warning-text: #92400e;
+      --status-warning-border: #fef3c7;
+      --status-error-bg: #fef2f2;
+      --status-error-text: #991b1b;
+      --status-error-border: #fee2e2;
+      --status-info-bg: #eff6ff;
+      --status-info-text: #1e40af;
+      --status-info-border: #bfdbfe;
+      --status-neutral-bg: #f1f5f9;
+      --status-neutral-text: #334155;
+      --status-neutral-border: #cbd5e1;
+      --chat-bg: #faf9f8;
+      --overlay-bg: rgba(255, 255, 255, 0.9);
+      --shadow-color: rgba(0, 0, 0, 0.02);
+      --drawer-shadow: rgba(0, 0, 0, 0.1);
+      --modal-overlay: rgba(0, 0, 0, 0.1);
+      --panel-gradient-start: #ffffff;
+      --panel-gradient-end: #fbfaf8;
+      --panel-decor: rgba(140, 137, 133, 0.16);
+      --update-badge-bg: #dcfce7;
+      --update-badge-text: #166534;
+      --update-badge-border: #bbf7d0;
+      --update-badge-hover: #bbf7d0;
+      --progress-bg: #f3f2f1;
+      --spinner-track: #f3f2f1;
+      --tier-splus-bg: #ecfdf5;
+      --tier-splus-text: #065f46;
+      --tier-splus-border: #a7f3d0;
+      --tier-s-bg: #f0fdf4;
+      --tier-s-text: #166534;
+      --tier-s-border: #bbf7d0;
+      --tier-aplus-bg: #eff6ff;
+      --tier-aplus-text: #1e40af;
+      --tier-aplus-border: #bfdbfe;
+      --tier-a-bg: #f0f9ff;
+      --tier-a-text: #075985;
+      --tier-a-border: #bae6fd;
+      --tier-b-bg: #fffbeb;
+      --tier-b-text: #92400e;
+      --tier-b-border: #fef3c7;
+      --tier-c-bg: #fef2f2;
+      --tier-c-text: #991b1b;
+      --tier-c-border: #fee2e2;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d37;
+      --border-subtle: #252832;
+      --text: #e4e4e7;
+      --text-muted: #71717a;
+      --text-dim: #64748b;
+      --accent: #60a5fa;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --surface-alt: #23262f;
+      --surface-hover: #2a2d37;
+      --input-bg: #14161e;
+      --input-bg-alt: #23262f;
+      --status-success-bg: #052e16;
+      --status-success-text: #34d399;
+      --status-success-border: #166534;
+      --status-warning-bg: #451a03;
+      --status-warning-text: #fbbf24;
+      --status-warning-border: #92400e;
+      --status-error-bg: #450a0a;
+      --status-error-text: #f87171;
+      --status-error-border: #991b1b;
+      --status-info-bg: #172554;
+      --status-info-text: #60a5fa;
+      --status-info-border: #1e40af;
+      --status-neutral-bg: #1e293b;
+      --status-neutral-text: #94a3b8;
+      --status-neutral-border: #334155;
+      --chat-bg: #14161e;
+      --overlay-bg: rgba(15, 17, 23, 0.9);
+      --shadow-color: rgba(0, 0, 0, 0.2);
+      --drawer-shadow: rgba(0, 0, 0, 0.4);
+      --modal-overlay: rgba(0, 0, 0, 0.5);
+      --panel-gradient-start: #1a1d27;
+      --panel-gradient-end: #14161e;
+      --panel-decor: rgba(100, 116, 139, 0.12);
+      --update-badge-bg: #052e16;
+      --update-badge-text: #34d399;
+      --update-badge-border: #166534;
+      --update-badge-hover: #166534;
+      --progress-bg: #23262f;
+      --spinner-track: #23262f;
+      --tier-splus-bg: #052e16;
+      --tier-splus-text: #34d399;
+      --tier-splus-border: #166534;
+      --tier-s-bg: #052e16;
+      --tier-s-text: #4ade80;
+      --tier-s-border: #166534;
+      --tier-aplus-bg: #172554;
+      --tier-aplus-text: #60a5fa;
+      --tier-aplus-border: #1e40af;
+      --tier-a-bg: #172554;
+      --tier-a-text: #7dd3fc;
+      --tier-a-border: #1e40af;
+      --tier-b-bg: #451a03;
+      --tier-b-text: #fbbf24;
+      --tier-b-border: #92400e;
+      --tier-c-bg: #450a0a;
+      --tier-c-text: #f87171;
+      --tier-c-border: #991b1b;
     }
 
     .pill-estimate {
@@ -26,9 +144,9 @@
       padding: 0 4px;
       font-size: 0.65rem;
       font-weight: 600;
-      background: #f3f4f6;
-      color: #6b7280;
-      border: 1px solid #e5e7eb;
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      border: 1px solid var(--border-subtle);
       border-radius: 4px;
       margin-left: 4px;
       vertical-align: middle;
@@ -360,7 +478,7 @@
 
     .chat-model-select {
       min-width: 280px;
-      background: #fff;
+      background: var(--input-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px 10px;
@@ -381,7 +499,7 @@
       overflow-y: auto;
       border: 1px solid var(--border);
       border-radius: 14px;
-      background: #faf9f8;
+      background: var(--chat-bg);
       padding: 14px;
       display: flex;
       flex-direction: column;
@@ -400,9 +518,9 @@
     .chat-msg {
       border: 1px solid var(--border);
       border-radius: 10px;
-      background: #fff;
+      background: var(--card);
       padding: 10px 12px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 1px 2px var(--shadow-color);
     }
 
     .chat-msg.user {
@@ -484,7 +602,7 @@
       font-family: inherit;
       resize: vertical;
       outline: none;
-      background: #fff;
+      background: var(--card);
       color: var(--text);
     }
 
@@ -508,11 +626,11 @@
     }
 
     .chat-status.error {
-      color: #b91c1c;
+      color: var(--status-error-text);
     }
 
     .chat-status.success {
-      color: #047857;
+      color: var(--status-success-text);
     }
 
     .chat-send-btn[disabled] {
@@ -530,7 +648,7 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 18px;
-      background: #faf9f8;
+      background: var(--chat-bg);
     }
 
     .setup-card h3 {
@@ -563,7 +681,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 0.78rem;
       line-height: 1.45;
-      background: #ffffff;
+      background: var(--input-bg);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px;
@@ -603,7 +721,7 @@
       border: 1px solid var(--border);
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 1px 3px var(--shadow-color);
     }
 
     .table-header {
@@ -629,7 +747,7 @@
 
     .search-input {
       width: 100%;
-      background: #f3f2f1;
+      background: var(--input-bg-alt);
       border: 1px solid transparent;
       padding: 8px 16px 8px 36px;
       border-radius: 8px;
@@ -639,7 +757,7 @@
     }
 
     .search-input:focus {
-      background: white;
+      background: var(--input-bg);
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
@@ -665,7 +783,7 @@
       font-size: 0.75rem;
       color: var(--text-muted);
       font-weight: 600;
-      background: #faf9f8;
+      background: var(--chat-bg);
     }
 
     th.sortable {
@@ -679,7 +797,7 @@
       display: none;
       gap: 16px;
       padding: 12px 24px;
-      background: #faf9f8;
+      background: var(--chat-bg);
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
     }
@@ -801,50 +919,50 @@
       font-size: 0.7rem;
       padding: 3px 8px;
       border-radius: 6px;
-      background: #f3f2f1;
+      background: var(--input-bg-alt);
       border: 1px solid transparent;
     }
 
     .tier-S\+ {
-      background: #ecfdf5;
-      color: #065f46;
-      border-color: #a7f3d0;
+      background: var(--tier-splus-bg);
+      color: var(--tier-splus-text);
+      border-color: var(--tier-splus-border);
     }
 
     .tier-S {
-      background: #f0fdf4;
-      color: #166534;
-      border-color: #bbf7d0;
+      background: var(--tier-s-bg);
+      color: var(--tier-s-text);
+      border-color: var(--tier-s-border);
     }
 
     .tier-A\+ {
-      background: #eff6ff;
-      color: #1e40af;
-      border-color: #bfdbfe;
+      background: var(--tier-aplus-bg);
+      color: var(--tier-aplus-text);
+      border-color: var(--tier-aplus-border);
     }
 
     .tier-A {
-      background: #f0f9ff;
-      color: #075985;
-      border-color: #bae6fd;
+      background: var(--tier-a-bg);
+      color: var(--tier-a-text);
+      border-color: var(--tier-a-border);
     }
 
     .tier-B {
-      background: #fffbeb;
-      color: #92400e;
-      border-color: #fef3c7;
+      background: var(--tier-b-bg);
+      color: var(--tier-b-text);
+      border-color: var(--tier-b-border);
     }
 
     .tier-C {
-      background: #fef2f2;
-      color: #991b1b;
-      border-color: #fee2e2;
+      background: var(--tier-c-bg);
+      color: var(--tier-c-text);
+      border-color: var(--tier-c-border);
     }
 
     .progress-pill {
       width: 80px;
       height: 6px;
-      background: #f3f2f1;
+      background: var(--surface-alt);
       border-radius: 999px;
       position: relative;
       overflow: hidden;
@@ -918,7 +1036,7 @@
     }
 
     .expand-btn:hover {
-      background: #f3f2f1;
+      background: var(--surface-alt);
     }
 
     /* Switch Component */
@@ -942,7 +1060,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #e5e7eb;
+      background-color: var(--border-subtle);
       transition: .4s;
       border-radius: 20px;
     }
@@ -954,7 +1072,7 @@
       width: 14px;
       left: 3px;
       bottom: 3px;
-      background-color: white;
+      background-color: var(--input-bg);
       transition: .4s;
       border-radius: 50%;
     }
@@ -995,7 +1113,7 @@
     .form-group input[type="password"] {
       width: 100%;
       padding: 0.75rem;
-      background: #f3f2f1;
+      background: var(--input-bg-alt);
       border: 1px solid transparent;
       border-radius: 8px;
       color: var(--text);
@@ -1004,7 +1122,7 @@
     }
 
     .form-group input[type="password"]:focus {
-      background: white;
+      background: var(--input-bg);
       border-color: var(--accent);
     }
 
@@ -1013,8 +1131,8 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 18px;
-      background: linear-gradient(135deg, #ffffff 0%, #fbfaf8 100%);
-      box-shadow: 0 8px 22px rgba(26, 25, 24, 0.06);
+      background: linear-gradient(135deg, var(--panel-gradient-start) 0%, var(--panel-gradient-end) 100%);
+      box-shadow: 0 8px 22px var(--shadow-color);
       overflow: hidden;
     }
 
@@ -1025,7 +1143,7 @@
       width: 220px;
       height: 220px;
       border-radius: 50%;
-      background: radial-gradient(circle at center, rgba(140, 137, 133, 0.16), rgba(140, 137, 133, 0));
+      background: radial-gradient(circle at center, var(--panel-decor), transparent);
       pointer-events: none;
     }
 
@@ -1066,15 +1184,15 @@
     }
 
     .autoupdate-status-pill.on {
-      color: #065f46;
-      background: #ecfdf5;
-      border-color: #a7f3d0;
+      color: var(--status-success-text);
+      background: var(--status-success-bg);
+      border-color: var(--status-success-border);
     }
 
     .autoupdate-status-pill.off {
-      color: #334155;
-      background: #f1f5f9;
-      border-color: #cbd5e1;
+      color: var(--status-neutral-text);
+      background: var(--status-neutral-bg);
+      border-color: var(--status-neutral-border);
     }
 
     .autoupdate-controls {
@@ -1103,8 +1221,8 @@
       width: 92px;
       padding: 7px 9px;
       border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      background: white;
+      border: 1px solid var(--status-neutral-border);
+      background: var(--input-bg);
       color: var(--text);
       box-sizing: border-box;
       outline: none;
@@ -1122,11 +1240,11 @@
     }
 
     .autoupdate-save-status.success {
-      color: #047857;
+      color: var(--status-success-text);
     }
 
     .autoupdate-save-status.error {
-      color: #b91c1c;
+      color: var(--status-error-text);
     }
 
     .autoupdate-stats-grid {
@@ -1138,7 +1256,7 @@
     }
 
     .autoupdate-stat {
-      background: rgba(255, 255, 255, 0.82);
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 9px 10px;
@@ -1149,7 +1267,7 @@
       font-size: 0.68rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #64748b;
+      color: var(--text-dim);
       font-weight: 700;
       margin-bottom: 5px;
     }
@@ -1163,7 +1281,7 @@
     }
 
     .autoupdate-stat-value.error {
-      color: #b91c1c;
+      color: var(--status-error-text);
       font-weight: 700;
     }
 
@@ -1176,7 +1294,7 @@
       width: 450px;
       background: var(--card);
       border-left: 1px solid var(--border);
-      box-shadow: -20px 0 60px rgba(0, 0, 0, 0.1);
+      box-shadow: -20px 0 60px var(--drawer-shadow);
       transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 1000;
       padding: 40px;
@@ -1194,7 +1312,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.1);
+      background: var(--modal-overlay);
       backdrop-filter: blur(2px);
       z-index: 999;
       display: none;
@@ -1221,9 +1339,9 @@
       font-weight: 700;
       padding: 2px 7px;
       border-radius: 999px;
-      background: #eff6ff;
-      color: #1e40af;
-      border: 1px solid #bfdbfe;
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid var(--status-info-border);
       white-space: nowrap;
     }
 
@@ -1245,7 +1363,7 @@
 
     .pin-row-btn:hover {
       opacity: 1;
-      background: #f3f2f1;
+      background: var(--surface-alt);
     }
 
     .pin-row-btn.pinned,
@@ -1262,7 +1380,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 1px 3px var(--shadow-color);
       overflow: hidden;
     }
 
@@ -1277,7 +1395,7 @@
     }
 
     .log-card-header:hover {
-      background: rgba(0, 0, 0, 0.018);
+      background: var(--surface-hover);
     }
 
     .log-chevron {
@@ -1306,7 +1424,7 @@
       border: 1px solid var(--border);
       border-radius: 9px;
       overflow: hidden;
-      background: #fff;
+      background: var(--input-bg);
     }
 
     .logs-mode-btn {
@@ -1320,26 +1438,26 @@
     }
 
     .logs-mode-btn.active {
-      background: #f3f4f6;
+      background: var(--surface-alt);
       color: var(--text);
     }
     .update-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #dcfce7;
-      color: #166534;
+      background: var(--update-badge-bg);
+      color: var(--update-badge-text);
       padding: 4px 10px;
       border-radius: 99px;
       font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      border: 1px solid #bbf7d0;
+      border: 1px solid var(--update-badge-border);
     }
 
     .update-badge:hover {
-      background: #bbf7d0;
+      background: var(--update-badge-hover);
       transform: translateY(-1px);
     }
 
@@ -1349,7 +1467,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--overlay-bg);
       backdrop-filter: blur(4px);
       z-index: 9999;
       display: none;
@@ -1364,7 +1482,7 @@
       width: 100%;
       max-width: 400px;
       height: 8px;
-      background: #f3f2f1;
+      background: var(--progress-bg);
       border-radius: 4px;
       overflow: hidden;
       margin: 20px 0;
@@ -1373,7 +1491,7 @@
 
     .progress-bar {
       height: 100%;
-      background: var(--primary);
+      background: var(--accent);
       width: 0%;
       transition: width 0.3s ease;
     }
@@ -1381,8 +1499,8 @@
     .update-spinner {
       width: 40px;
       height: 40px;
-      border: 3px solid #f3f2f1;
-      border-top: 3px solid var(--primary);
+      border: 3px solid var(--spinner-track);
+      border-top: 3px solid var(--accent);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 20px;
@@ -1398,7 +1516,7 @@
       align-items: center;
       gap: 6px;
       border: 1px solid var(--border);
-      background: #f8fafc;
+      background: var(--input-bg-alt);
       color: var(--text);
       border-radius: 999px;
       padding: 4px 10px;
@@ -1409,8 +1527,8 @@
     }
 
     .provider-model-refresh-btn:hover {
-      background: #eef2f7;
-      border-color: #cbd5e1;
+      background: var(--surface-hover);
+      border-color: var(--border-subtle);
     }
 
     .provider-model-refresh-btn:disabled {
@@ -1469,6 +1587,9 @@
         <p style="margin: 8px 0 0; color: var(--text-muted); font-size: 0.78rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <span>Version <span id="dashboard-version">Loading...</span></span>
           <span id="update-pill" style="display:none;"></span>
+          <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" style="background: var(--surface-alt); border: 1px solid var(--border); cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; color: var(--text);">
+            <span id="theme-icon">🌙</span>
+          </button>
         </p>
       </div>
     </div>
@@ -1541,7 +1662,7 @@
           <div style="display:flex; align-items:center; gap:20px; flex-shrink: 0;">
             <button onclick="toggleFilterBar()"
               style="display:flex; align-items:center; gap:6px; border:1px solid var(--border); background:white; cursor:pointer; font-size:0.8rem; color:var(--text); padding:6px 12px; border-radius:6px; transition:all 0.15s; font-weight:500;"
-              onmouseover="this.style.background='#f3f2f1'" onmouseout="this.style.background='white'">
+              onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background='var(--input-bg)'">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -1550,7 +1671,7 @@
             </button>
             <div style="display:flex; align-items:center; gap:10px;">
               <div id="hover-pause-badge"
-                style="display:none; background:var(--warning); color:#92400e; padding:4px 8px; border-radius:6px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; align-items:center; gap:4px;">
+                style="display:none; background:var(--warning); color:var(--status-warning-text); padding:4px 8px; border-radius:6px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; align-items:center; gap:4px;">
                 ⏸ Paused on hover</div>
               <span style="font-size:0.8rem; color:var(--text-muted); cursor:pointer; user-select:none;"
                 onclick="document.getElementById('live-sort-toggle').click()">Live Sort</span>
@@ -1561,7 +1682,7 @@
             </div>
             <button id="sort-reset-btn" onclick="resetSort()"
               style="display:none; border:none; background:none; cursor:pointer; font-size:0.8rem; color:var(--text-muted); padding:4px 8px; border-radius:6px; white-space:nowrap; transition:all 0.15s;"
-              onmouseover="this.style.background='#f3f2f1';this.style.color='var(--text)'"
+              onmouseover="this.style.background='var(--surface-alt)';this.style.color='var(--text)'"
               onmouseout="this.style.background='none';this.style.color='var(--text-muted)'">&#x2715; Reset
               sort</button>
           </div>
@@ -1676,7 +1797,7 @@
       <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Providers</h3>
       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Configure API keys to enable models from different providers.</p>
       <div style="margin-bottom: 1rem;">
-        <button id="refresh-all-btn" onclick="refreshAllProviders()" style="border: 1px solid var(--border); background: white; cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        <button id="refresh-all-btn" onclick="refreshAllProviders()" style="border: 1px solid var(--border); background: var(--input-bg); cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
           Refresh All Providers
         </button>
@@ -1692,9 +1813,9 @@
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
             <button class="btn" style="padding:8px 14px;" onclick="exportConfigTokenToBox()">Export</button>
             <button class="btn" style="padding:8px 14px;" onclick="copyConfigTokenFromBox()">Copy</button>
-            <button class="btn" style="padding:8px 14px; background:#ecfdf5; border-color:#a7f3d0; color:#065f46;" onclick="importConfigTokenFromBox()">Import</button>
+            <button class="btn" style="padding:8px 14px; background:var(--status-success-bg); border-color:var(--status-success-border); color:var(--status-success-text);" onclick="importConfigTokenFromBox()">Import</button>
           </div>
-          <textarea id="config-transfer-payload" spellcheck="false" placeholder="Paste exported config token here..." style="width:100%; min-height:95px; box-sizing:border-box; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.78rem; line-height:1.4; resize:vertical; background:#fff;"></textarea>
+          <textarea id="config-transfer-payload" spellcheck="false" placeholder="Paste exported config token here..." style="width:100%; min-height:95px; box-sizing:border-box; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.78rem; line-height:1.4; resize:vertical; background:var(--card);"></textarea>
           <div id="config-transfer-status" class="autoupdate-save-status" style="margin-top:8px;"></div>
         </div>
       </div>
@@ -1715,9 +1836,9 @@
               aria-selected="true">Message History</button>
           </div>
           <button id="logs-pause-toggle" onclick="toggleLogsAutoRefresh()" class="btn"
-            style="background: white; color: var(--text); border: 1px solid var(--border);">Pause Live Updates</button>
+            style="background: var(--input-bg); color: var(--text); border: 1px solid var(--border);">Pause Live Updates</button>
           <button onclick="loadLogs(true)" class="btn"
-            style="background: white; color: var(--text); border: 1px solid var(--border);">Refresh Logs</button>
+            style="background: var(--input-bg); color: var(--text); border: 1px solid var(--border);">Refresh Logs</button>
         </div>
       </div>
       <div id="logs-container" style="display: flex; flex-direction: column; gap: 16px;">
@@ -1750,7 +1871,7 @@
             <select id="chat-model-select" class="chat-model-select" onchange="onChatModelChange()">
               <option value="auto-fastest">Auto (Fastest Available)</option>
             </select>
-            <button id="chat-clear-btn" class="btn" style="background: white; color: var(--text); border: 1px solid var(--border);" onclick="clearChat()">Clear Chat</button>
+            <button id="chat-clear-btn" class="btn" style="background: var(--input-bg); color: var(--text); border: 1px solid var(--border);" onclick="clearChat()">Clear Chat</button>
           </div>
         </div>
         <div id="chat-transcript" class="chat-transcript">
@@ -1866,23 +1987,53 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
       <h2 id="drawer-title" style="margin: 0; font-size: 1.25rem;">Model Details</h2>
       <button onclick="closeDrawer()"
-        style="border: none; background: #f3f2f1; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">&times;</button>
+        style="border: none; background: var(--surface-alt); cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">&times;</button>
     </div>
     <div id="drawer-content"></div>
   </div>
 
-  <div id="provider-sync-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:min(720px, calc(100vw - 32px)); max-height:min(80vh, 760px); background:#fff; border:1px solid var(--border); border-radius:18px; box-shadow:0 24px 80px rgba(15, 23, 42, 0.22); z-index:1001; overflow:hidden;">
+  <div id="provider-sync-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:min(720px, calc(100vw - 32px)); max-height:min(80vh, 760px); background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 24px 80px rgba(15, 23, 42, 0.22); z-index:1001; overflow:hidden;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:20px 22px 14px; border-bottom:1px solid var(--border);">
       <div>
         <div id="provider-sync-title" style="font-size:1.05rem; font-weight:700; color:var(--text);">Provider Model Refresh</div>
         <div id="provider-sync-subtitle" style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;"></div>
       </div>
-      <button onclick="closeProviderSyncModal()" style="border:none; background:#f3f4f6; cursor:pointer; width:32px; height:32px; border-radius:999px; font-size:1.2rem; line-height:1;">&times;</button>
+      <button onclick="closeProviderSyncModal()" style="border:none; background:var(--surface-alt); cursor:pointer; width:32px; height:32px; border-radius:999px; font-size:1.2rem; line-height:1;">&times;</button>
     </div>
     <div id="provider-sync-body" style="padding:18px 22px 22px; overflow:auto; max-height:calc(80vh - 84px);"></div>
   </div>
 
   <script>
+    // Theme toggle
+    (function() {
+      const saved = localStorage.getItem('modelrelay-theme');
+      if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+
+    function toggleTheme() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('modelrelay-theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('modelrelay-theme', 'dark');
+      }
+      updateThemeIcon();
+    }
+
+    function updateThemeIcon() {
+      const icon = document.getElementById('theme-icon');
+      if (!icon) return;
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      icon.textContent = isDark ? '☀️' : '🌙';
+    }
+
+    // Run on DOMContentLoaded to ensure button exists
+    document.addEventListener('DOMContentLoaded', updateThemeIcon);
+
     let allModels = [];
     let searchTerm = '';
     // null = default multi-sort; otherwise { col: string, dir: 'asc'|'desc' }
@@ -3083,14 +3234,14 @@
               <div style="margin-top:6px; color:var(--text-muted); font-size:0.82rem;">Canonical pins route to the best matching provider for that model family. Exact pins lock to the specific provider row you clicked.</div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; background:${mode === 'canonical' ? '#eff6ff' : '#fff'}; border:1px solid ${mode === 'canonical' ? '#bfdbfe' : 'var(--border)'}; border-radius:10px; padding:10px 12px; max-width:320px;">
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; background:${mode === 'canonical' ? 'var(--status-info-bg)' : 'var(--input-bg)'}; border:1px solid ${mode === 'canonical' ? 'var(--status-info-border)' : 'var(--border)'}; border-radius:10px; padding:10px 12px; max-width:320px;">
                 <input type="radio" name="pinning-mode" value="canonical" ${mode === 'canonical' ? 'checked' : ''} onchange="updatePinningMode('canonical')">
                 <span>
                   <span style="display:block; font-weight:700; font-size:0.82rem;">Canonical Group</span>
                   <span style="display:block; color:var(--text-muted); font-size:0.76rem; margin-top:3px;">Default. Pin the same model across providers and route to the best available match.</span>
                 </span>
               </label>
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; background:${mode === 'exact' ? '#eff6ff' : '#fff'}; border:1px solid ${mode === 'exact' ? '#bfdbfe' : 'var(--border)'}; border-radius:10px; padding:10px 12px; max-width:320px;">
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; background:${mode === 'exact' ? 'var(--status-info-bg)' : 'var(--input-bg)'}; border:1px solid ${mode === 'exact' ? 'var(--status-info-border)' : 'var(--border)'}; border-radius:10px; padding:10px 12px; max-width:320px;">
                 <input type="radio" name="pinning-mode" value="exact" ${mode === 'exact' ? 'checked' : ''} onchange="updatePinningMode('exact')">
                 <span>
                   <span style="display:block; font-weight:700; font-size:0.82rem;">Exact Provider Row</span>
@@ -3129,7 +3280,7 @@
       const excludedProviders = filterRules.excludedProviders || [];
 
       const providerCheckboxes = providers.map(p => `
-        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; cursor: pointer; font-size: 0.875rem;">
+        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--input-bg-alt); border-radius: 8px; cursor: pointer; font-size: 0.875rem;">
           <input type="checkbox" class="excluded-provider-checkbox" value="${escapeHtml(p.key)}" ${excludedProviders.includes(p.key) ? 'checked' : ''}>
           ${escapeHtml(p.name)}
         </label>
@@ -3232,7 +3383,7 @@
       openProviderSyncModal(
         `${providerName} Model Sync`,
         'Refresh failed',
-        `<div style="padding:14px 16px; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; color:#7f1d1d; font-size:0.84rem; line-height:1.5; white-space:pre-wrap; word-break:break-word;">${escapeHtml(errorMessage || 'Unknown error.')}</div>`
+        `<div style="padding:14px 16px; background:var(--status-error-bg); border:1px solid var(--status-error-border); border-radius:12px; color:var(--status-error-text); font-size:0.84rem; line-height:1.5; white-space:pre-wrap; word-break:break-word;">${escapeHtml(errorMessage || 'Unknown error.')}</div>`
       );
     }
 
@@ -3414,8 +3565,8 @@
 
           const tokenOptional = p.supportsOptionalBearerAuth === true;
           const statusIcon = p.hasKey ? '✅' : (tokenOptional ? 'ℹ️' : '⚠️');
-          const statusColor = p.hasKey ? '#065f46' : (tokenOptional ? '#1e40af' : '#92400e');
-          const statusBg = p.hasKey ? '#ecfdf5' : (tokenOptional ? '#eff6ff' : '#fffbeb');
+          const statusColor = p.hasKey ? 'var(--status-success-text)' : (tokenOptional ? 'var(--status-info-text)' : 'var(--status-warning-text)');
+          const statusBg = p.hasKey ? 'var(--status-success-bg)' : (tokenOptional ? 'var(--status-info-bg)' : 'var(--status-warning-bg)');
           const statusText = p.hasKey
             ? (tokenOptional ? 'API Key configured' : 'Key configured')
             : (tokenOptional ? 'API Key optional' : 'No API key');
@@ -3433,7 +3584,7 @@
               : '';
             const creditResetLine = rl.creditResetAt ? `<span>Credit reset: <b>${fmtTime(rl.creditResetAt) ?? 'unknown'}</b></span>` : '';
             rateLimitHtml = `
-              <div style="margin-top:12px; padding:10px 12px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; font-size:0.78rem;">
+              <div style="margin-top:12px; padding:10px 12px; background:var(--input-bg-alt); border:1px solid var(--border); border-radius:8px; font-size:0.78rem;">
                 <div style="font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; font-size:0.7rem;">Rate Limits (last prompt)</div>
                 <div style="display:flex; gap:16px; flex-wrap:wrap;">
                   ${rl.limitRequests != null ? `<span>Requests: <b>${fmtNum(rl.remainingRequests ?? '?')}</b> / ${fmtNum(rl.limitRequests)} remaining</span>` : ''}
@@ -3451,10 +3602,10 @@
               ? errorUpdated.toLocaleString()
               : 'unknown time';
             providerErrorHtml = `
-              <div style="margin-top:12px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:0.78rem; color:#7f1d1d;">
-                <div style="font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; font-size:0.7rem; color:#991b1b;">Latest Provider Error</div>
+              <div style="margin-top:12px; padding:10px 12px; background:var(--status-error-bg); border:1px solid var(--status-error-border); border-radius:8px; font-size:0.78rem; color:var(--status-error-text);">
+                <div style="font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; font-size:0.7rem; color:var(--status-error-text);">Latest Provider Error</div>
                 <div style="word-break:break-word;"><b>${escapeHtml(errorModel.modelId)}</b>: ${escapeHtml(providerError.message)}</div>
-                <div style="margin-top:6px; color:#b91c1c;">HTTP ${escapeHtml(providerError.code || '?')} • ${escapeHtml(errorWhen)}</div>
+                <div style="margin-top:6px; color:var(--status-error-text);">HTTP ${escapeHtml(providerError.code || '?')} • ${escapeHtml(errorWhen)}</div>
               </div>`;
           }
 
@@ -3504,7 +3655,7 @@
             <div class="form-group" style="display:flex; gap:8px; align-items:center;">
               <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'API Key Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter API Key (optional)...' : 'Enter API Key...')}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
               <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:white; cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
-              ${p.hasKey ? `<button onclick="deleteProviderKey('${p.key}')" style="border:1px solid #fecaca; background:#fff1f2; color:#b91c1c; cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;">Delete Key</button>` : ''}
+              ${p.hasKey ? `<button onclick="deleteProviderKey('${p.key}')" style="border:1px solid var(--status-error-border); background:var(--card)1f2; color:var(--status-error-text); cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;">Delete Key</button>` : ''}
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
               <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Ping interval (min):</span>
@@ -3512,24 +3663,24 @@
               <span style="font-size:0.75rem; color:var(--text-muted);">(default: 30)</span>
             </div>
             ${(Array.isArray(p.apiKeyPool) && p.apiKeyPool.length > 0) ? `
-            <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border:1px solid var(--border); border-radius:10px;">
+            <div style="margin-top:14px; padding:12px 14px; background:var(--input-bg-alt); border:1px solid var(--border); border-radius:10px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <span style="font-size:0.8rem; font-weight:700; color:var(--text);">Accounts (${p.apiKeyPool.length})</span>
                 <span style="font-size:0.7rem; color:var(--text-muted);">${p.apiKeyPool.length > 1 ? 'Round-robin active' : 'Add one more key to enable round-robin'}</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
                 ${p.apiKeyPool.map((acct, i) => `
-                  <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:white; border:1px solid #e5e7eb; border-radius:6px; font-size:0.78rem;">
+                  <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:var(--input-bg); border:1px solid var(--border-subtle); border-radius:6px; font-size:0.78rem;">
                     <span style="font-weight:700; color:var(--text-muted); min-width:20px;">[${i}]</span>
                     <span style="font-family:monospace; color:var(--text); flex:1;">${escapeHtml(acct.masked)}</span>
                     <span id="acct-status-${p.key}-${i}" style="font-size:0.7rem;"></span>
-                    <button onclick="removeAccountKey('${p.key}', ${i})" style="border:1px solid #fecaca; background:#fff1f2; color:#b91c1c; cursor:pointer; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">Remove</button>
+                    <button onclick="removeAccountKey('${p.key}', ${i})" style="border:1px solid var(--status-error-border); background:var(--card)1f2; color:var(--status-error-text); cursor:pointer; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">Remove</button>
                   </div>
                 `).join('')}
               </div>
               <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
                 <input type="password" id="new-key-${p.key}" placeholder="Add new account key..." style="flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem;">
-                <button onclick="addAccountKey('${p.key}')" style="border:1px solid #bbf7d0; background:#ecfdf5; color:#065f46; cursor:pointer; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Add Account</button>
+                <button onclick="addAccountKey('${p.key}')" style="border:1px solid var(--status-success-border); background:var(--status-success-bg); color:var(--status-success-text); cursor:pointer; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Add Account</button>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
                 <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Max turns per account:</span>
@@ -3711,12 +3862,12 @@
         let html = `<table style="width:100%;">
           <thead>
             <tr>
-              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Provider</th>
-              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Account</th>
-              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Status</th>
-              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Requests</th>
-              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Max Turns</th>
-              <th style="text-align:center; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:#faf9f8;">Next</th>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Provider</th>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Account</th>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Status</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Requests</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Max Turns</th>
+              <th style="text-align:center; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Next</th>
             </tr>
           </thead>
           <tbody>`;
@@ -3728,25 +3879,25 @@
             const isRateLimited = acct.rateLimited;
             const hitMaxTurns = maxTurns > 0 && acct.requests >= maxTurns;
             let statusIcon = '🟢';
-            let statusColor = '#065f46';
-            let statusBg = '#ecfdf5';
+            let statusColor = 'var(--status-success-text)';
+            let statusBg = 'var(--status-success-bg)';
             let statusText = 'Active';
             if (isRateLimited) {
               statusIcon = '🔴';
-              statusColor = '#7f1d1d';
-              statusBg = '#fef2f2';
+              statusColor = 'var(--status-error-text)';
+              statusBg = 'var(--status-error-bg)';
               statusText = 'Rate Limited';
             } else if (hitMaxTurns) {
               statusIcon = '🟡';
-              statusColor = '#92400e';
-              statusBg = '#fffbeb';
+              statusColor = 'var(--status-warning-text)';
+              statusBg = 'var(--status-warning-bg)';
               statusText = 'Cooling';
             }
             const isNext = acct.index === info.currentIdx;
             html += `<tr style="border-bottom:1px solid var(--border);">
               <td style="padding:14px 24px; font-size:0.875rem; font-weight:600;">${escapeHtml(name)}</td>
               <td style="padding:14px 24px; font-size:0.875rem;">
-                <span style="font-family:monospace; background:#f3f2f1; padding:2px 6px; border-radius:4px; font-size:0.78rem;">[${acct.index}] ${escapeHtml(acct.masked)}</span>
+                <span style="font-family:monospace; background:var(--surface-alt); padding:2px 6px; border-radius:4px; font-size:0.78rem;">[${acct.index}] ${escapeHtml(acct.masked)}</span>
               </td>
               <td style="padding:14px 24px;">
                 <span style="background:${statusBg}; color:${statusColor}; border-radius:999px; padding:2px 10px; font-size:0.72rem; font-weight:700;">${statusIcon} ${statusText}</span>
@@ -4080,11 +4231,11 @@
             : Math.max(0, attempts.length - 1);
           const hadFailover = retryCount > 0;
           let statusBadge = '';
-          if (l.status === '200') statusBadge = '<span style="background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">200 OK</span>';
-          else if (l.status === 'pending') statusBadge = '<span style="background: #eff6ff; color: #1e40af; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">Pending...</span>';
-          else statusBadge = `<span style="background: #fef2f2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">${l.status}</span>`;
+          if (l.status === '200') statusBadge = '<span style="background: var(--status-success-bg); color: var(--status-success-text); padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">200 OK</span>';
+          else if (l.status === 'pending') statusBadge = '<span style="background: var(--status-info-bg); color: var(--status-info-text); padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">Pending...</span>';
+          else statusBadge = `<span style="background: var(--status-error-bg); color: var(--status-error-text); padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;">${l.status}</span>`;
           const resolvedModelChip = l.resolvedModel
-            ? `<span style="background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; font-size:0.7rem; font-weight:700;">resolved: ${escapeHtml(l.resolvedModel)}</span>`
+            ? `<span style="background:var(--status-info-bg); color:var(--status-info-text); padding:2px 8px; border-radius:999px; font-size:0.7rem; font-weight:700;">resolved: ${escapeHtml(l.resolvedModel)}</span>`
             : '';
 
           let messagesArray = Array.isArray(l.messages) ? l.messages : (typeof l.messages === 'string' ? [{ role: 'raw', content: l.messages }] : []);
@@ -4099,7 +4250,7 @@
             return `
               <div style="margin-top: 12px; border-left: 3px solid ${colorVar}; padding-left: 12px;">
                 <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: ${colorVar}; margin-bottom: 4px;">${m.role}</div>
-                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 200px; overflow-y: auto; background: #faf9f8; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${formattedContent}</div>
+                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 200px; overflow-y: auto; background: var(--chat-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${formattedContent}</div>
               </div>
             `;
           }).join('');
@@ -4110,7 +4261,7 @@
             responseHtml = `
               <div style="margin-top: 12px; border-left: 3px solid var(--accent); padding-left: 12px;">
                 <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 4px;">ASSISTANT</div>
-                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 300px; overflow-y: auto; background: #faf9f8; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${formattedResp}</div>
+                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 300px; overflow-y: auto; background: var(--chat-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${formattedResp}</div>
               </div>
             `;
           }
@@ -4122,7 +4273,7 @@
             toolCallsHtml = `
               <div style="margin-top: 12px; border-left: 3px solid var(--accent); padding-left: 12px;">
                 <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 4px;">TOOL CALLS (${numTools})</div>
-                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 200px; overflow-y: auto; background: #faf9f8; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${tcStr}</div>
+                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 200px; overflow-y: auto; background: var(--chat-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${tcStr}</div>
               </div>
             `;
           }
@@ -4133,7 +4284,7 @@
             functionCallHtml = `
               <div style="margin-top: 12px; border-left: 3px solid var(--accent); padding-left: 12px;">
                 <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 4px;">FUNCTION CALL</div>
-                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 200px; overflow-y: auto; background: #faf9f8; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${fcStr}</div>
+                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 200px; overflow-y: auto; background: var(--chat-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">${fcStr}</div>
               </div>
             `;
           }
@@ -4145,7 +4296,7 @@
             errorHtml = `
               <div style="margin-top: 12px; border-left: 3px solid var(--error); padding-left: 12px;">
                 <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--error); margin-bottom: 4px;">PROXY ERROR</div>
-                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: #7f1d1d; max-height: 200px; overflow-y: auto; background: #fef2f2; padding: 8px; border-radius: 6px; border: 1px solid #fecaca;">${formattedErr}</div>
+                <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--status-error-text); max-height: 200px; overflow-y: auto; background: var(--status-error-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--status-error-border);">${formattedErr}</div>
               </div>
             `;
           }
@@ -4156,8 +4307,8 @@
               const code = a && a.status ? String(a.status) : 'unknown';
               const isOk = code === '200';
               const isRetryable = !!(a && a.retryable);
-              const chipBg = isOk ? '#ecfdf5' : (isRetryable ? '#fffbeb' : '#fef2f2');
-              const chipFg = isOk ? '#065f46' : (isRetryable ? '#92400e' : '#991b1b');
+              const chipBg = isOk ? 'var(--status-success-bg)' : (isRetryable ? 'var(--status-warning-bg)' : 'var(--status-error-bg)');
+              const chipFg = isOk ? 'var(--status-success-text)' : (isRetryable ? 'var(--status-warning-text)' : 'var(--status-error-text)');
               const model = a && a.model ? a.model : '(unknown model)';
               const provider = a && a.provider ? a.provider : '(unknown provider)';
               const duration = a && a.duration != null ? `${a.duration}ms` : 'n/a';
@@ -4165,7 +4316,7 @@
                 ? `<div style="margin-top:4px; color: var(--text-muted); font-size:0.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${String(a.error).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
                 : '';
               return `
-                <div style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: #faf9f8;">
+                <div style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--chat-bg);">
                   <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                     <div style="font-size:0.78rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="color:var(--text-muted);">#${idx + 1}</span> ${provider}/${model}</div>
                     <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
@@ -4221,7 +4372,7 @@
                 ${failoverHtml}
                 ${errorHtml}
                 <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
-                  <button onclick="event.stopPropagation(); toggleBan('${l.model}', '${logModelStatus}')" style="background: ${isBanned ? '#e5e7eb' : '#fef2f2'}; border: 1px solid ${isBanned ? '#d1d5db' : '#fecaca'}; padding: 6px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: ${isBanned ? '#374151' : '#991b1b'}; cursor: pointer;">${isBanned ? '✓ Unban Model' : '🚫 Ban Model'}</button>
+                  <button onclick="event.stopPropagation(); toggleBan('${l.model}', '${logModelStatus}')" style="background: ${isBanned ? 'var(--border-subtle)' : 'var(--status-error-bg)'}; border: 1px solid ${isBanned ? 'var(--border-subtle)' : 'var(--status-error-border)'}; padding: 6px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: ${isBanned ? 'var(--status-neutral-text)' : 'var(--status-error-text)'}; cursor: pointer;">${isBanned ? '✓ Unban Model' : '🚫 Ban Model'}</button>
                 </div>
               </div>
             </div>
@@ -4305,7 +4456,7 @@
       if (role === 'system') return 'var(--warning)';
       if (role === 'user') return 'var(--success)';
       if (role === 'assistant') return 'var(--accent)';
-      if (role === 'tool') return '#8b5cf6';
+      if (role === 'tool') return 'var(--accent)';
       return 'var(--text-muted)';
     }
 
@@ -4397,14 +4548,14 @@
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
               <span style="font-size: 0.68rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:${badgeColor};">${escapeHtml(role)}</span>
             </div>
-            <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); background: #faf9f8; padding: 9px; border-radius: 7px; border: 1px solid var(--border); max-height: 240px; overflow-y:auto;">${content}</div>
+            <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); background: var(--chat-bg); padding: 9px; border-radius: 7px; border: 1px solid var(--border); max-height: 240px; overflow-y:auto;">${content}</div>
             <div style="margin-top:8px; font-size: 0.74rem; color: var(--text-muted); display:flex; gap:8px; flex-wrap:wrap;">
               <span>${timeStr}</span>
               <span>•</span>
               <span>${dateStr}</span>
               <span>•</span>
               <span>${escapeHtml(item.model || '(unknown model)')}</span>
-              ${item.resolvedModel ? `<span>•</span><span style="color:#3730a3;">resolved: ${escapeHtml(item.resolvedModel)}</span>` : ''}
+              ${item.resolvedModel ? `<span>•</span><span style="color:var(--status-info-text);">resolved: ${escapeHtml(item.resolvedModel)}</span>` : ''}
             </div>
           </div>
         `;
@@ -4461,8 +4612,8 @@
 
       const isModelPinned = activePinnedRowKeys.includes(getModelRowKey(m));
       const lastErrorHtml = m.lastError && m.lastError.message
-        ? `<div style="margin: -6px 0 14px; padding: 10px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #7f1d1d; font-size: 0.76rem;">
-            <div style="font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; color: #991b1b;">Last Ping Error</div>
+        ? `<div style="margin: -6px 0 14px; padding: 10px 12px; background: var(--status-error-bg); border: 1px solid var(--status-error-border); border-radius: 8px; color: var(--status-error-text); font-size: 0.76rem;">
+            <div style="font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; color: var(--status-error-text);">Last Ping Error</div>
             <div style="word-break: break-word;">${escapeHtml(m.lastError.message)}</div>
           </div>`
         : '';
@@ -4470,16 +4621,16 @@
         <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
           <div style="min-width:0; flex:1;">
             <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Model ID</div>
-            <div style="font-family: monospace; background: #f3f2f1; padding: 12px; border-radius: 8px; font-size: 0.875rem; word-break:break-all;">${m.modelId}</div>
+            <div style="font-family: monospace; background: var(--surface-alt); padding: 12px; border-radius: 8px; font-size: 0.875rem; word-break:break-all;">${m.modelId}</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
-            <button onclick="pinModel('${isModelPinned ? '' : m.modelId}', '${m.providerKey}')" style="background: ${isModelPinned ? '#eff6ff' : '#f3f2f1'}; border: ${isModelPinned ? '1px solid #bfdbfe' : '1px solid transparent'}; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${isModelPinned ? '#1e40af' : 'var(--text)'}; cursor: pointer;">
+            <button onclick="pinModel('${isModelPinned ? '' : m.modelId}', '${m.providerKey}')" style="background: ${isModelPinned ? 'var(--status-info-bg)' : 'var(--surface-alt)'}; border: ${isModelPinned ? '1px solid var(--status-info-border)' : '1px solid transparent'}; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${isModelPinned ? 'var(--status-info-text)' : 'var(--text)'}; cursor: pointer;">
               ${isModelPinned ? '📌 Unpin Model' : '📌 Pin Model'}
             </button>
-            <button onclick="pingModelNow('${m.modelId}')" style="background: #ecfeff; border: 1px solid #a5f3fc; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: #0e7490; cursor: pointer;">
+            <button onclick="pingModelNow('${m.modelId}')" style="background: var(--status-info-bg); border: 1px solid var(--status-info-border); padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: var(--status-info-text); cursor: pointer;">
               📶 Ping Now
             </button>
-            <button onclick="toggleBan('${m.modelId}', '${m.status}')" style="background: ${m.status === 'banned' ? 'var(--text-muted)' : '#fef2f2'}; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${m.status === 'banned' ? '#fff' : '#991b1b'}; cursor: pointer;">
+            <button onclick="toggleBan('${m.modelId}', '${m.status}')" style="background: ${m.status === 'banned' ? 'var(--text-muted)' : 'var(--status-error-bg)'}; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: ${m.status === 'banned' ? 'var(--input-bg)' : 'var(--status-error-text)'}; cursor: pointer;">
               ${m.status === 'banned' ? 'Unban Model' : 'Ban Model'}
             </button>
           </div>
@@ -4487,11 +4638,11 @@
         ${lastErrorHtml}
         <div id="drawer-ping-status" style="margin: -8px 0 16px; font-size: 0.75rem; color: var(--text-muted);"></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
-          <div style="background: #faf9f8; padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+          <div style="background: var(--chat-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
             <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">SWE-bench</div>
             <div style="font-weight: 700;">${getBenchmarkDisplayValue(m.intell, m.isEstimatedScore)}</div>
           </div>
-          <div style="background: #faf9f8; padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+          <div style="background: var(--chat-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
             <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Context</div>
             <div style="font-weight: 700;">${m.ctx || 'N/A'}</div>
           </div>
