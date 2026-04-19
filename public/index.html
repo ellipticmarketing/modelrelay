@@ -138,6 +138,19 @@
       --tier-c-border: #991b1b;
     }
 
+    [data-theme="dark"] input,
+    [data-theme="dark"] select,
+    [data-theme="dark"] textarea {
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    [data-theme="dark"] input[type="number"]::-webkit-inner-spin-button,
+    [data-theme="dark"] input[type="number"]::-webkit-outer-spin-button {
+      filter: invert(1);
+    }
+
     .pill-estimate {
       display: inline-flex;
       align-items: center;
@@ -697,21 +710,100 @@
       .dashboard-header {
         align-items: flex-start;
       }
+
+      #settings-view, #setup-view {
+        padding: 24px 20px;
+      }
+
+      .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .search-bar {
+        max-width: 100%;
+        width: 100%;
+      }
     }
 
     @media (max-width: 640px) {
       .container {
-        margin: 28px auto;
-        padding: 0 14px;
+        margin: 20px auto;
+        padding: 0 12px;
       }
 
       .kpi-grid {
-        gap: 12px;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       }
 
       .kpi-card {
         min-height: 94px;
         padding: 14px 16px;
+      }
+
+      .dashboard-heading {
+        font-size: clamp(1.2rem, 5vw, 1.45rem);
+      }
+
+      #settings-view, #setup-view {
+        padding: 20px 14px;
+        border-radius: 14px;
+      }
+
+      .table-container {
+        border-radius: 14px;
+      }
+
+      .chat-model-select {
+        min-width: unset;
+        width: 100%;
+      }
+
+      .chat-transcript {
+        min-height: 250px;
+      }
+
+      .tabs {
+        gap: 1rem;
+      }
+
+      .tab {
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        margin: 12px auto;
+        padding: 0 8px;
+      }
+
+      .dashboard-header {
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      #settings-view, #setup-view {
+        padding: 16px 10px;
+        border-radius: 12px;
+      }
+
+      .table-container {
+        border-radius: 12px;
+      }
+
+      .table-header {
+        padding: 14px 12px;
+      }
+
+      th, td {
+        padding: 8px 8px;
+        font-size: 0.8rem;
       }
     }
 
@@ -722,6 +814,27 @@
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 1px 3px var(--shadow-color);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+    }
+
+    th, td {
+      white-space: nowrap;
+      padding: 10px 12px;
+    }
+
+    th:first-child, td:first-child {
+      width: 40px;
+      text-align: center;
     }
 
     .table-header {
@@ -1661,7 +1774,7 @@
           </div>
           <div style="display:flex; align-items:center; gap:20px; flex-shrink: 0;">
             <button onclick="toggleFilterBar()"
-              style="display:flex; align-items:center; gap:6px; border:1px solid var(--border); background:white; cursor:pointer; font-size:0.8rem; color:var(--text); padding:6px 12px; border-radius:6px; transition:all 0.15s; font-weight:500;"
+              style="display:flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--input-bg); cursor:pointer; font-size:0.8rem; color:var(--text); padding:6px 12px; border-radius:6px; transition:all 0.15s; font-weight:500;"
               onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background='var(--input-bg)'">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -1671,7 +1784,7 @@
             </button>
             <div style="display:flex; align-items:center; gap:10px;">
               <div id="hover-pause-badge"
-                style="display:none; background:var(--warning); color:var(--status-warning-text); padding:4px 8px; border-radius:6px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; align-items:center; gap:4px;">
+                style="display:none; background:var(--warning); color:#1a0a00; padding:4px 8px; border-radius:6px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; align-items:center; gap:4px;">
                 ⏸ Paused on hover</div>
               <span style="font-size:0.8rem; color:var(--text-muted); cursor:pointer; user-select:none;"
                 onclick="document.getElementById('live-sort-toggle').click()">Live Sort</span>
@@ -1747,22 +1860,23 @@
           </div>
         </div>
 
+        <div class="table-wrap">
         <table onmouseenter="isTableHovered=true; document.getElementById('hover-pause-badge').style.display='flex';"
           onmouseleave="isTableHovered=false; document.getElementById('hover-pause-badge').style.display='none';">
           <thead>
             <tr>
-              <th width="40"></th>
+              <th></th>
               <th class="sortable" onclick="setSort('model')" id="th-model">Model <i class="sort-arrow"
                   id="arrow-model">↕</i></th>
-              <th class="sortable" width="80" onclick="setSort('qos')" id="th-qos">QoS <i class="sort-arrow"
+              <th class="sortable" onclick="setSort('qos')" id="th-qos">QoS <i class="sort-arrow"
                   id="arrow-qos">↕</i></th>
-              <th class="sortable" width="80" onclick="setSort('intell')" id="th-intell">SWE% <i class="sort-arrow"
+              <th class="sortable" onclick="setSort('intell')" id="th-intell">SWE% <i class="sort-arrow"
                   id="arrow-intell">↕</i></th>
-              <th class="sortable text-right" width="120" onclick="setSort('ping')" id="th-ping">Ping <i
+              <th class="sortable text-right" onclick="setSort('ping')" id="th-ping">Ping <i
                   class="sort-arrow" id="arrow-ping">↕</i></th>
-              <th class="sortable text-right" width="150" onclick="setSort('availability')" id="th-availability">
+              <th class="sortable text-right" onclick="setSort('availability')" id="th-availability">
                 Availability <i class="sort-arrow" id="arrow-availability">↕</i></th>
-              <th class="sortable" width="100" onclick="setSort('status')" id="th-status">Status <i class="sort-arrow"
+              <th class="sortable" onclick="setSort('status')" id="th-status">Status <i class="sort-arrow"
                   id="arrow-status">↕</i></th>
             </tr>
           </thead>
@@ -1770,6 +1884,7 @@
             <!-- Populated by JS -->
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -1797,7 +1912,7 @@
       <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Providers</h3>
       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Configure API keys to enable models from different providers.</p>
       <div style="margin-bottom: 1rem;">
-        <button id="refresh-all-btn" onclick="refreshAllProviders()" style="border: 1px solid var(--border); background: var(--input-bg); cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        <button id="refresh-all-btn" onclick="refreshAllProviders()" style="border: 1px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
           Refresh All Providers
         </button>
@@ -1851,7 +1966,7 @@
         <div class="table-header">
           <div class="table-title">Account Status</div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <button onclick="loadAccountStatus()" class="btn" style="background:white; color:var(--text); border:1px solid var(--border);">Refresh</button>
+            <button onclick="loadAccountStatus()" class="btn" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border);">Refresh</button>
           </div>
         </div>
         <div id="account-status-body">
@@ -3653,13 +3768,13 @@
               </div>
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center;">
-              <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'API Key Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter API Key (optional)...' : 'Enter API Key...')}" style="flex:1;" onblur="updateProviderKey('${p.key}')">
-              <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:white; cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
+              <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'API Key Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter API Key (optional)...' : 'Enter API Key...')}" style="flex:1; background:var(--input-bg); color:var(--text);" onblur="updateProviderKey('${p.key}')">
+              <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:var(--input-bg); color:var(--text); cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
               ${p.hasKey ? `<button onclick="deleteProviderKey('${p.key}')" style="border:1px solid var(--status-error-border); background:var(--card)1f2; color:var(--status-error-text); cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;">Delete Key</button>` : ''}
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
               <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Ping interval (min):</span>
-              <input type="number" id="ping-interval-${p.key}" min="1" step="1" value="${p.pingIntervalMinutes || ''}" placeholder="30" style="width:70px; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem;" onchange="updateProviderPingInterval('${p.key}')">
+              <input type="number" id="ping-interval-${p.key}" min="1" step="1" value="${p.pingIntervalMinutes || ''}" placeholder="30" style="width:70px; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem; background:var(--input-bg); color:var(--text);" onchange="updateProviderPingInterval('${p.key}')">
               <span style="font-size:0.75rem; color:var(--text-muted);">(default: 30)</span>
             </div>
             ${(Array.isArray(p.apiKeyPool) && p.apiKeyPool.length > 0) ? `
@@ -3679,7 +3794,7 @@
                 `).join('')}
               </div>
               <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-                <input type="password" id="new-key-${p.key}" placeholder="Add new account key..." style="flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem;">
+                <input type="password" id="new-key-${p.key}" placeholder="Add new account key..." style="flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem; background:var(--input-bg); color:var(--text);">
                 <button onclick="addAccountKey('${p.key}')" style="border:1px solid var(--status-success-border); background:var(--status-success-bg); color:var(--status-success-text); cursor:pointer; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:600;">Add Account</button>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
