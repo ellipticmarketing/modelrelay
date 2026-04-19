@@ -1658,6 +1658,11 @@
       <div id="autoupdate-container" class="provider-section">
         <!-- Auto-update settings generated here -->
       </div>
+      <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Auto-Ping</h3>
+      <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Control whether the router automatically pings models on a schedule to track their health and speed.</p>
+      <div id="autoping-container" class="provider-section">
+        <!-- Auto-ping settings generated here -->
+      </div>
       <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Pinning</h3>
       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Choose whether pinning locks one exact provider model or the whole canonical model family across providers.</p>
       <div id="pinning-settings-container" class="provider-section">
@@ -1670,6 +1675,13 @@
       </div>
       <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Providers</h3>
       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Configure API keys to enable models from different providers.</p>
+      <div style="margin-bottom: 1rem;">
+        <button id="refresh-all-btn" onclick="refreshAllProviders()" style="border: 1px solid var(--border); background: white; cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+          Refresh All Providers
+        </button>
+        <span id="refresh-all-status" style="margin-left: 10px; font-size: 0.78rem; color: var(--text-muted);"></span>
+      </div>
       <div id="providers-container" class="autoupdate-panel">
         <!-- Settings generated here -->
       </div>
@@ -2974,6 +2986,88 @@
       `;
     }
 
+    function renderAutoPingSettings(autoPing) {
+      const container = document.getElementById('autoping-container');
+      if (!container) return;
+      const enabled = autoPing.enabled !== false;
+
+      container.innerHTML = `
+        <div class="autoupdate-panel">
+          <div class="autoupdate-header">
+            <div>
+              <h3 class="autoupdate-title">Auto-Ping</h3>
+              <div class="autoupdate-subtitle">When enabled, the router periodically pings all models to track health and latency. Disable to save bandwidth and only ping on demand.</div>
+            </div>
+            <span class="autoupdate-status-pill ${enabled ? 'on' : 'off'}">${enabled ? 'On' : 'Off'}</span>
+          </div>
+          <div class="autoupdate-controls">
+            <label class="autoupdate-toggle-label">
+              <input type="checkbox" id="autoping-enabled" ${enabled ? 'checked' : ''}>
+              Enable auto-ping
+            </label>
+            <button class="btn" onclick="saveAutoPingSettings()">Save Changes</button>
+            <span id="autoping-save-status" class="autoupdate-save-status"></span>
+          </div>
+        </div>
+      `;
+    }
+
+    async function saveAutoPingSettings() {
+      const enabled = document.getElementById('autoping-enabled').checked;
+      const statusEl = document.getElementById('autoping-save-status');
+      try {
+        const res = await fetch('/api/auto-ping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled }),
+        });
+        if (!res.ok) throw new Error('Failed to save.');
+        statusEl.textContent = 'Saved!';
+        statusEl.style.color = 'var(--success)';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+        await loadSettings();
+      } catch (err) {
+        statusEl.textContent = err.message || 'Failed to save.';
+        statusEl.style.color = 'var(--error)';
+      }
+    }
+
+    async function refreshAllProviders() {
+      const btn = document.getElementById('refresh-all-btn');
+      const statusEl = document.getElementById('refresh-all-status');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      statusEl.textContent = 'Refreshing all providers...';
+
+      try {
+        const res = await fetch('/api/providers/refresh-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Refresh failed.');
+
+        const succeeded = data.providers.filter(p => p.success).length;
+        const failed = data.providers.filter(p => !p.success).length;
+        const parts = [];
+        if (succeeded > 0) parts.push(`${succeeded} succeeded`);
+        if (failed > 0) parts.push(`${failed} failed`);
+        statusEl.textContent = parts.join(', ') + '.';
+        statusEl.style.color = failed > 0 ? 'var(--warning)' : 'var(--success)';
+
+        await fetchData();
+        await loadSettings();
+      } catch (err) {
+        statusEl.textContent = err.message || 'Refresh failed.';
+        statusEl.style.color = 'var(--error)';
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        setTimeout(() => { statusEl.textContent = ''; }, 5000);
+      }
+    }
+
     function renderPinningSettings(pinningState) {
       const container = document.getElementById('pinning-settings-container');
       if (!container) return;
@@ -3270,17 +3364,20 @@
 
     async function loadSettings() {
       try {
-        const [providersRes, autoUpdateRes, filterRulesRes, pinningRes] = await Promise.all([
+        const [providersRes, autoUpdateRes, filterRulesRes, pinningRes, autoPingRes] = await Promise.all([
           fetch('/api/config'),
           fetch('/api/autoupdate'),
           fetch('/api/filter-rules'),
           fetch('/api/pinning'),
+          fetch('/api/auto-ping'),
         ]);
         const providers = await providersRes.json();
         const autoUpdate = await autoUpdateRes.json();
         const filterRules = await filterRulesRes.json();
         const pinning = await pinningRes.json();
+        const autoPing = await autoPingRes.json();
         renderAutoUpdateSettings(autoUpdate);
+        renderAutoPingSettings(autoPing);
         renderPinningSettings(pinning);
         renderFilterRules(filterRules, providers);
         renderProviderFilterGroup(providers);
