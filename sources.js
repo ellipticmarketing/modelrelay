@@ -25,7 +25,10 @@ export const MODEL_ID_ALIASES = {
   'kimi-k2': 'moonshotai/kimi-k2-instruct',
   'kimi-k2-thinking': 'moonshotai/kimi-k2-thinking',
   'kimi-k2.5': 'moonshotai/kimi-k2.5',
+  'kimi-k2.6': 'moonshotai/kimi-k2.6',
   'kimi-k2:1t': 'moonshotai/kimi-k2-instruct',
+  'inclusionai/ling-2.6-flash:free': 'inclusionai/ling-2.6-flash',
+  'ling-2.6-flash-free': 'inclusionai/ling-2.6-flash',
   'mimo-v2-flash-free': 'mimo-v2-flash-free',
   'mimo-v2-pro-free': 'xiaomi/mimo-v2-pro',
   'qwen3:4b': 'qwen/qwen3-4b',
@@ -82,7 +85,12 @@ export const MODEL_LABEL_OVERRIDES = {
   'kimi-k2': 'Kimi K2',
   'kimi-k2-thinking': 'Kimi K2 Thinking',
   'kimi-k2.5': 'Kimi K2.5',
+  'kimi-k2.6': 'Kimi K2.6',
+  'moonshotai/kimi-k2.6': 'Kimi K2.6',
   'kimi-k2:1t': 'Kimi K2 Instruct',
+  'inclusionai/ling-2.6-flash': 'Ling 2.6 Flash',
+  'inclusionai/ling-2.6-flash:free': 'Ling 2.6 Flash',
+  'ling-2.6-flash-free': 'Ling 2.6 Flash',
   'mimo-v2-flash-free': 'MiMo V2 Flash',
   'mimo-v2-pro-free': 'MiMo V2 Omni Pro',
   'mimo-v2-omni-free': 'MiMo V2 Omni',
@@ -107,6 +115,13 @@ export const MODEL_LABEL_OVERRIDES = {
   'xiaomi/mimo-v2-omni:free': 'MiMo V2 Omni',
   'xiaomi/mimo-v2-pro:free': 'MiMo V2 Omni Pro',
   'x-ai/grok-code-fast-1:optimized:free': 'Grok Code Fast',
+}
+
+export const MODEL_CONTEXT_OVERRIDES = {
+  'inclusionai/ling-2.6-flash': '262k',
+  'kimi-k2.6': '262k',
+  'ling-2.6-flash-free': '262k',
+  'moonshotai/kimi-k2.6': '262k',
 }
 
 export function resolveAliasedModelId(modelId) {
@@ -140,6 +155,11 @@ export function getPreferredModelLabel(modelId, fallback = null) {
   if (override) return override
   const cleanedFallback = cleanModelDisplayLabel(fallback)
   return cleanedFallback || fallback
+}
+
+export function getPreferredModelContext(modelId, fallback = null) {
+  const resolved = resolveAliasedModelId(modelId)
+  return MODEL_CONTEXT_OVERRIDES[modelId] || MODEL_CONTEXT_OVERRIDES[resolved] || fallback
 }
 
 export function getScore(modelId) {
