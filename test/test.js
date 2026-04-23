@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 
-import { sources, MODELS, canonicalizeModelId, getPreferredModelLabel, getScore, resolveAliasedModelId } from '../sources.js'
+import { sources, MODELS, canonicalizeModelId, getPreferredModelContext, getPreferredModelLabel, getScore, resolveAliasedModelId } from '../sources.js'
 import {
   getAvg,
   getVerdict,
@@ -22,6 +22,7 @@ import {
   VERDICT_ORDER,
 } from '../lib/utils.js'
 import { buildOpenClawProviderConfig } from '../lib/onboard.js'
+import { normalizeMissingScoreId } from '../lib/score-fetcher.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
 import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
@@ -501,6 +502,7 @@ describe('dynamic model score resolution', () => {
     assert.equal(getScore('glm-5.1'), 0.584)
     assert.equal(getScore('google/gemma-4-26b-a4b-it:free'), 0.771)
     assert.equal(getScore('google/gemma-4-31b-it:free'), 0.8)
+    assert.equal(getScore('kimi-k2.6'), 0.802)
   })
 
   it('maps Gemma 4 Ollama aliases onto researched score entries', () => {
@@ -529,6 +531,19 @@ describe('dynamic model score resolution', () => {
     assert.ok(model)
     assert.equal(model.intell, 0.822)
     assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('uses researched Kimi K2.6 score and context for Ollama discovery', () => {
+    const model = toOllamaModelMeta({
+      name: 'kimi-k2.6',
+      model: 'kimi-k2.6',
+    })
+
+    assert.ok(model)
+    assert.equal(model.label, 'Kimi K2.6')
+    assert.equal(model.intell, 0.802)
+    assert.equal(model.isEstimatedScore, false)
+    assert.equal(model.ctx, '262k')
   })
 
   it('keeps MiniMax M-series SWE scores monotonic as versions increase', () => {
@@ -610,6 +625,25 @@ describe('dynamic model score resolution', () => {
     assert.equal(model.label, 'MiniMax M2.5')
     assert.equal(model.intell, 0.802)
     assert.equal(model.isEstimatedScore, false)
+  })
+
+  it('normalizes Ling 2.6 Flash free aliases and keeps provider context metadata', () => {
+    assert.equal(resolveAliasedModelId('ling-2.6-flash-free'), 'inclusionai/ling-2.6-flash')
+    assert.equal(resolveAliasedModelId('inclusionai/ling-2.6-flash:free'), 'inclusionai/ling-2.6-flash')
+    assert.equal(getPreferredModelContext('ling-2.6-flash-free'), '262k')
+
+    const model = toOpenCodeModelMeta({ id: 'ling-2.6-flash-free' })
+
+    assert.ok(model)
+    assert.equal(model.label, 'Ling 2.6 Flash')
+    assert.equal(model.ctx, '262k')
+    assert.equal(model.intell, 0.45)
+    assert.equal(model.isEstimatedScore, true)
+  })
+
+  it('deduplicates missing score audit entries by canonical model id', () => {
+    assert.equal(normalizeMissingScoreId('ling-2.6-flash-free'), 'inclusionai/ling-2.6-flash')
+    assert.equal(normalizeMissingScoreId('inclusionai/ling-2.6-flash:free'), 'inclusionai/ling-2.6-flash')
   })
 
   it('includes OpenCode Zen free models that end with -free', () => {
