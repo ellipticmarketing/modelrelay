@@ -86,6 +86,7 @@ export const scores = {
   "mistralai/mistral-medium-3-instruct": 0.48,
   "mistralai/mistral-small-3.1-24b-instruct": 0.536,
   "mistralai/mixtral-8x22b-instruct-v0.1": 0.32,
+  "moonshotai/kimi-k2.6": 0.802,
   "moonshotai/kimi-k2-instruct": 0.658,
   "moonshotai/kimi-k2-thinking": 0.713,
   "moonshotai/kimi-k2.5": 0.768,
