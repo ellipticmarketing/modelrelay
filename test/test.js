@@ -630,6 +630,8 @@ describe('dynamic model score resolution', () => {
   it('normalizes Ling 2.6 Flash free aliases and keeps provider context metadata', () => {
     assert.equal(resolveAliasedModelId('ling-2.6-flash-free'), 'inclusionai/ling-2.6-flash')
     assert.equal(resolveAliasedModelId('inclusionai/ling-2.6-flash:free'), 'inclusionai/ling-2.6-flash')
+    assert.equal(getScore('ling-2.6-flash-free'), 0.232)
+    assert.equal(getScore('inclusionai/ling-2.6-flash:free'), 0.232)
     assert.equal(getPreferredModelContext('ling-2.6-flash-free'), '262k')
 
     const model = toOpenCodeModelMeta({ id: 'ling-2.6-flash-free' })
@@ -637,8 +639,18 @@ describe('dynamic model score resolution', () => {
     assert.ok(model)
     assert.equal(model.label, 'Ling 2.6 Flash')
     assert.equal(model.ctx, '262k')
-    assert.equal(model.intell, 0.45)
-    assert.equal(model.isEstimatedScore, true)
+    assert.equal(model.intell, 0.232)
+    assert.equal(model.isEstimatedScore, false)
+
+    const openRouterModel = toOpenRouterModelMeta({
+      id: 'inclusionai/ling-2.6-flash:free',
+      name: 'inclusionAI: Ling-2.6-flash (free)',
+      context_length: 262144,
+    })
+
+    assert.ok(openRouterModel)
+    assert.equal(openRouterModel.intell, 0.232)
+    assert.equal(openRouterModel.isEstimatedScore, false)
   })
 
   it('deduplicates missing score audit entries by canonical model id', () => {
