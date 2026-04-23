@@ -55,6 +55,14 @@
     "chalk": "^5.4.1",
     "express": "^5.2.1"
   },
+  "overrides": {
+    "path-to-regexp": "8.4.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "path-to-regexp": "8.4.0"
+    }
+  },
   "engines": {
     "node": ">=18.0.0"
   }
