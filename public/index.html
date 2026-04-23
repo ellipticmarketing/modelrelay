@@ -801,10 +801,6 @@
         padding: 14px 12px;
       }
 
-      th, td {
-        padding: 8px 8px;
-        font-size: 0.8rem;
-      }
     }
 
     /* Table Card */
@@ -1024,6 +1020,21 @@
 
     tr:last-child td {
       border-bottom: none;
+    }
+
+    @media (max-width: 640px) {
+      .table-wrap table {
+        table-layout: auto;
+        min-width: 720px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .table-wrap th,
+      .table-wrap td {
+        padding: 8px;
+        font-size: 0.8rem;
+      }
     }
 
     /* Custom Elements */
@@ -1401,22 +1412,26 @@
     /* Drawer/Slide-over */
     #drawer {
       position: fixed;
-      right: -100%;
+      right: 0;
       top: 0;
       bottom: 0;
       width: 450px;
+      max-width: 100vw;
+      box-sizing: border-box;
       background: var(--card);
       border-left: 1px solid var(--border);
       box-shadow: -20px 0 60px var(--drawer-shadow);
-      transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 1000;
       padding: 40px;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
 
     #drawer.open {
-      right: 0;
+      transform: translateX(0);
     }
 
     .drawer-overlay {
@@ -3770,7 +3785,7 @@
             <div class="form-group" style="display:flex; gap:8px; align-items:center;">
               <input type="password" id="key-${p.key}" placeholder="${p.hasKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (' + (tokenOptional ? 'API Key Configured' : 'Key Configured') + ')' : (tokenOptional ? 'Enter API Key (optional)...' : 'Enter API Key...')}" style="flex:1; background:var(--input-bg); color:var(--text);" onblur="updateProviderKey('${p.key}')">
               <button onclick="const i=document.getElementById('key-${p.key}'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';" style="border:1px solid var(--border); background:var(--input-bg); color:var(--text); cursor:pointer; padding:8px 10px; border-radius:6px; font-size:0.85rem; white-space:nowrap;">👁</button>
-              ${p.hasKey ? `<button onclick="deleteProviderKey('${p.key}')" style="border:1px solid var(--status-error-border); background:var(--card)1f2; color:var(--status-error-text); cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;">Delete Key</button>` : ''}
+              ${p.hasKey ? `<button onclick="deleteProviderKey('${p.key}')" style="border:1px solid var(--status-error-border); background:var(--status-error-bg); color:var(--status-error-text); cursor:pointer; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;">Delete Key</button>` : ''}
             </div>
             <div class="form-group" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
               <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Ping interval (min):</span>
@@ -3789,7 +3804,7 @@
                     <span style="font-weight:700; color:var(--text-muted); min-width:20px;">[${i}]</span>
                     <span style="font-family:monospace; color:var(--text); flex:1;">${escapeHtml(acct.masked)}</span>
                     <span id="acct-status-${p.key}-${i}" style="font-size:0.7rem;"></span>
-                    <button onclick="removeAccountKey('${p.key}', ${i})" style="border:1px solid var(--status-error-border); background:var(--card)1f2; color:var(--status-error-text); cursor:pointer; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">Remove</button>
+                    <button onclick="removeAccountKey('${p.key}', ${i})" style="border:1px solid var(--status-error-border); background:var(--status-error-bg); color:var(--status-error-text); cursor:pointer; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">Remove</button>
                   </div>
                 `).join('')}
               </div>
