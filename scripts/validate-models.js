@@ -21,8 +21,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 async function main() {
-  const sourcesModule = await import('../sources.js', { assert: { type: 'json' } });
-  const scoresModule = await import('../scores.js', { assert: { type: 'json' } });
+  const sourcesModule = await import('../sources.js');
+  const scoresModule = await import('../scores.js');
 
   const sources = sourcesModule.sources || sourcesModule.default || sourcesModule;
   const scores = scoresModule.scores || scoresModule.default || scoresModule;
