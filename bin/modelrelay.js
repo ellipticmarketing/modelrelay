@@ -22,10 +22,17 @@ function printHelp() {
   console.log('  modelrelay start --autostart')
   console.log('  modelrelay uninstall --autostart')
   console.log('  modelrelay status --autostart')
+  console.log('  modelrelay status')
   console.log('  modelrelay update')
   console.log('  modelrelay refresh-scores')
   console.log('  modelrelay config export')
   console.log('  modelrelay config import <token>')
+  console.log('  modelrelay config set-keys <provider> <key1,key2,...>')
+  console.log('  modelrelay config add-key <provider> <key>')
+  console.log('  modelrelay config remove-key <provider> <key>')
+  console.log('  modelrelay config remove-key <provider> <index>')
+  console.log('  modelrelay config set-maxturns <provider> <number>')
+  console.log('  modelrelay config set-maxturns <provider> 0')
   console.log('  modelrelay autoupdate [--enable|--disable|--status] [--interval <hours>]')
   console.log('  modelrelay autostart [--install|--start|--uninstall|--status]')
   console.log('')
@@ -223,8 +230,201 @@ async function main() {
       return
     }
 
+    if (cliArgs.configAction === 'set-keys') {
+      const provider = cliArgs.configProvider
+      const keysRaw = cliArgs.configKeys
+      if (!provider || !keysRaw) {
+        console.error('Usage: modelrelay config set-keys <provider> <key1,key2,...>')
+        process.exit(1)
+      }
+      const keys = keysRaw.split(',').map(k => k.trim()).filter(Boolean)
+      if (keys.length === 0) {
+        console.error('No valid keys provided.')
+        process.exit(1)
+      }
+      const config = loadConfig()
+      if (!config.apiKeys) config.apiKeys = {}
+      config.apiKeys[provider] = keys.length === 1 ? keys[0] : keys
+      saveConfig(config)
+      if (keys.length === 1) {
+        console.log(chalk.green(`✔ Set key for ${provider}: ${keys[0].slice(0, 4)}...`))
+      } else {
+        console.log(chalk.green(`✔ Set ${keys.length} keys for ${provider}`))
+        keys.forEach((k, i) => console.log(chalk.dim(`  [${i}] ${k.slice(0, 4)}...`)))
+      }
+      return
+    }
+
+    if (cliArgs.configAction === 'add-key') {
+      const provider = cliArgs.configProvider
+      const key = cliArgs.configKeys
+      if (!provider || !key) {
+        console.error('Usage: modelrelay config add-key <provider> <key>')
+        process.exit(1)
+      }
+      const config = loadConfig()
+      if (!config.apiKeys) config.apiKeys = {}
+      const existing = config.apiKeys[provider]
+      if (Array.isArray(existing)) {
+        if (existing.includes(key)) {
+          console.log(chalk.yellow(`Key already exists in pool for ${provider}.`))
+        } else {
+          existing.push(key)
+          config.apiKeys[provider] = existing
+          saveConfig(config)
+          console.log(chalk.green(`✔ Added key to ${provider} (now ${existing.length} keys)`))
+        }
+      } else if (typeof existing === 'string' && existing) {
+        config.apiKeys[provider] = [existing, key]
+        saveConfig(config)
+        console.log(chalk.green(`✔ Added second key to ${provider} (now 2 keys, round-robin enabled)`))
+      } else {
+        config.apiKeys[provider] = key
+        saveConfig(config)
+        console.log(chalk.green(`✔ Set single key for ${provider}`))
+      }
+      return
+    }
+
+    if (cliArgs.configAction === 'remove-key') {
+      const provider = cliArgs.configProvider
+      const keyOrIndex = cliArgs.configKeys
+      if (!provider || keyOrIndex === undefined) {
+        console.error('Usage: modelrelay config remove-key <provider> <key|index>')
+        process.exit(1)
+      }
+      const config = loadConfig()
+      if (!config.apiKeys || !config.apiKeys[provider]) {
+        console.error(`No keys configured for provider ${provider}.`)
+        process.exit(1)
+      }
+      const existing = config.apiKeys[provider]
+      if (!Array.isArray(existing)) {
+        delete config.apiKeys[provider]
+        saveConfig(config)
+        console.log(chalk.green(`✔ Removed single key for ${provider}.`))
+        return
+      }
+      const idx = Number(keyOrIndex)
+      if (!isNaN(idx) && idx >= 0 && idx < existing.length) {
+        const removed = existing.splice(idx, 1)[0]
+        if (existing.length === 0) {
+          delete config.apiKeys[provider]
+        } else if (existing.length === 1) {
+          config.apiKeys[provider] = existing[0]
+        } else {
+          config.apiKeys[provider] = existing
+        }
+        saveConfig(config)
+        console.log(chalk.green(`✔ Removed key [${idx}] ${removed.slice(0, 4)}... from ${provider} (${existing.length} remaining)`))
+      } else {
+        const idx2 = existing.indexOf(keyOrIndex)
+        if (idx2 !== -1) {
+          existing.splice(idx2, 1)
+          if (existing.length === 0) {
+            delete config.apiKeys[provider]
+          } else if (existing.length === 1) {
+            config.apiKeys[provider] = existing[0]
+          } else {
+            config.apiKeys[provider] = existing
+          }
+          saveConfig(config)
+          console.log(chalk.green(`✔ Removed key ${keyOrIndex.slice(0, 4)}... from ${provider} (${existing.length} remaining)`))
+        } else {
+          console.error(`Key not found in ${provider} pool: ${keyOrIndex}`)
+          process.exit(1)
+        }
+      }
+      return
+    }
+
+    if (cliArgs.configAction === 'set-maxturns') {
+      const provider = cliArgs.configProvider
+      const val = cliArgs.configMaxTurns
+      if (!provider || val === undefined) {
+        console.error('Usage: modelrelay config set-maxturns <provider> <number>')
+        process.exit(1)
+      }
+      const maxTurns = Math.floor(Number(val))
+      if (isNaN(maxTurns)) {
+        console.error('maxTurns must be a number.')
+        process.exit(1)
+      }
+      const config = loadConfig()
+      if (!config.providers) config.providers = {}
+      if (!config.providers[provider]) config.providers[provider] = {}
+      if (maxTurns === 0) {
+        delete config.providers[provider].maxTurns
+        saveConfig(config)
+        console.log(chalk.green(`✔ maxTurns disabled for ${provider} (unlimited requests per account)`))
+      } else {
+        config.providers[provider].maxTurns = maxTurns
+        saveConfig(config)
+        console.log(chalk.green(`✔ maxTurns set to ${maxTurns} for ${provider}`))
+      }
+      return
+    }
+
     console.error('Usage: modelrelay config export | modelrelay config import <token>')
+    console.error('       modelrelay config set-keys <provider> <key1,key2,...>')
+    console.error('       modelrelay config add-key <provider> <key>')
+    console.error('       modelrelay config remove-key <provider> <key|index>')
+    console.error('       modelrelay config set-maxturns <provider> <number>')
     process.exit(1)
+  }
+
+  if (cliArgs.command === 'status') {
+    const config = loadConfig()
+    const { getAccountStatus } = await import('../lib/server.js')
+    const { sources } = await import('../sources.js')
+    const { getApiKeyPool, getMaxTurns } = await import('../lib/config.js')
+
+    const liveStatus = getAccountStatus(config)
+
+    console.log()
+    console.log(chalk.bold('modelrelay account status'))
+    console.log()
+
+    const configuredProviders = Object.keys(config.apiKeys || {}).filter(k => getApiKeyPool(config, k).length > 0)
+
+    if (configuredProviders.length === 0) {
+      console.log(chalk.dim('No accounts configured.'))
+      console.log(chalk.dim('Add keys: modelrelay config add-key <provider> <key>'))
+      return
+    }
+
+    for (const provider of configuredProviders) {
+      const info = sources[provider]
+      const name = info?.name || provider
+      const isEnabled = config?.providers?.[provider]?.enabled !== false
+      const maxTurns = getMaxTurns(config, provider)
+      const pool = getApiKeyPool(config, provider)
+      const live = liveStatus.providers[provider]
+
+      console.log(chalk.bold(`${name} (${provider})`) + chalk.dim(` ${isEnabled ? 'enabled' : 'disabled'} | ${pool.length} account${pool.length !== 1 ? 's' : ''} | maxTurns: ${maxTurns > 0 ? maxTurns : 'unlimited'}`))
+
+      for (let i = 0; i < pool.length; i++) {
+        const key = pool[i]
+        const masked = key.length > 8 ? `${key.slice(0, 4)}...${key.slice(-4)}` : `${key.slice(0, 2)}***`
+        const liveAcct = live?.accounts?.find(a => a.index === i)
+        const requests = liveAcct?.requests ?? 0
+        const isRateLimited = liveAcct?.rateLimited ?? false
+        const hitMaxTurns = maxTurns > 0 && requests >= maxTurns
+
+        let statusIcon = chalk.green('🟢')
+        if (isRateLimited) statusIcon = chalk.red('🔴')
+        else if (hitMaxTurns) statusIcon = chalk.yellow('🟡')
+
+        const rotation = live?.currentIdx === i ? ' ← next' : ''
+        console.log(`  ${statusIcon} [${i}] ${masked}${rotation}  requests: ${requests}`)
+      }
+      console.log()
+    }
+
+    if (configuredProviders.length > 0) {
+      console.log(chalk.dim('(Live request counts require the router to be running)'))
+    }
+    return
   }
 
   if (cliArgs.onboard) {
