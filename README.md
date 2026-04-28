@@ -274,3 +274,8 @@ actual install still comes from the tarball path.
 ---
 
 ⭐️ If you find modelrelay useful, please consider [starring the repo](https://github.com/ellipticmarketing/modelrelay)!
+
+
+## API Docs
+- Swagger UI: http://localhost:7352/docs
+- OpenAPI JSON: http://localhost:7352/openapi.json

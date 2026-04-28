@@ -1,0 +1,70 @@
+# 1. Dependencies
+node_modules
+
+# 2. Git metadata
+.git
+.gitignore
+.gitattributes
+
+# 3. Test output
+test/
+test-reports/
+coverage/
+.nyc_output
+
+# 4. Build artifacts (if any build step adds these)
+dist/
+build/
+
+# 5. CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# 6. Documentation source (keep only final README.md, LICENSE)
+docs/
+AGENTS.md
+code_arena_scores.md
+
+# 7. Docker & compose files (not needed in image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 8. Editor/IDE configs
+.editorconfig
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 9. Package manager lockfiles (already installed in image)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 10. Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 11. Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 12. Environment files
+.env
+.env.local
+.env.*.local
+
+# 13. Generated API docs (if we generate them)
+docs/openapi.json
+docs/swagger.json

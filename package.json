@@ -49,11 +49,14 @@
   ],
   "scripts": {
     "start": "node bin/modelrelay.js",
-    "test": "node --test test/test.js"
+    "test": "node --test test/test.js",
+    "validate-models": "node scripts/validate-models.js"
   },
   "dependencies": {
     "chalk": "^5.4.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "overrides": {
     "path-to-regexp": "8.4.0"
@@ -65,5 +68,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.0.0"
   }
 }

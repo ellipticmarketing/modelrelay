@@ -10,5 +10,12 @@ services:
     environment:
       - NODE_ENV=production
       - HOME=/app/config
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:7352/api/meta"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
 volumes:
   modelrelay_config:
