@@ -1,0 +1,114 @@
+name: Build Custom Docker Image
+
+on:
+  schedule:
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      pr_list:
+        description: 'Comma-separated PR numbers to cherry-pick (e.g., 50,48)'
+        required: false
+        default: '50,48'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME_LOWER: ${{ github.repository_owner }}/${{ github.event.repository.name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Fetch upstream and prepare base
+        run: |
+          git remote add upstream https://github.com/ellipticmarketing/modelrelay.git
+          git fetch --depth=1 upstream master
+          git checkout -b base upstream/master
+
+      - name: Cherry-pick unmerged PRs
+        env:
+          PR_LIST: ${{ inputs.pr_list || '50,48' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Cherry-picking PRs: $PR_LIST"
+          for pr in $(echo "$PR_LIST" | tr ',' ' '); do
+            echo "Processing PR #$pr"
+            
+            # Check PR status
+            pr_state=$(gh pr view "$pr" --json state --jq '.state')
+            if [ "$pr_state" = "MERGED" ]; then
+              echo "PR #$pr is already merged, skipping..."
+              continue
+            fi
+            
+            commits=$(gh pr view "$pr" --json commits --jq '.commits | length')
+            head_ref=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
+
+            if [ "$commits" = "1" ]; then
+              commit=$(gh pr view "$pr" --json commits --jq '.commits[0].oid')
+              echo "Cherry-picking commit: $commit"
+              if ! git cherry-pick "$commit" 2>/dev/null; then
+                echo "Cherry-pick failed, aborting..."
+                git cherry-pick --abort 2>/dev/null || true
+              fi
+            else
+              echo "Fetching branch: $head_ref"
+              git fetch upstream "refs/heads/$head_ref" 2>/dev/null || \
+              git fetch origin "refs/heads/$head_ref" 2>/dev/null || {
+                echo "Branch $head_ref not found, skipping..."
+                continue
+              }
+              if ! git cherry-pick "origin/$head_ref" 2>/dev/null; then
+                echo "Cherry-pick failed, aborting..."
+                git cherry-pick --abort 2>/dev/null || true
+              fi
+            fi
+          done
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest
+
+      - name: Build and push with Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_VERSION=latest
+
+      - name: Create version tag
+        run: |
+          # Convert repo name to lowercase for ghcr.io
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_REPO="${{ env.REGISTRY }}/${REPO_LOWER}"
+          VERSION=$(git -C . rev-parse --short HEAD)
+          docker tag "${IMAGE_REPO}:sha-${VERSION}" "${IMAGE_REPO}:v${VERSION}"
+          docker push "${IMAGE_REPO}:v${VERSION}"

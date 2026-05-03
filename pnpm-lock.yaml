@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  path-to-regexp: 8.4.0
-
 importers:
 
   .:

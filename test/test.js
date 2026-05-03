@@ -136,6 +136,13 @@ describe('sources data integrity', () => {
     assert.ok(Array.isArray(sources.opencode.models))
   })
 
+  it('includes AiHubMix provider', () => {
+    assert.ok(sources.aihubmix)
+    assert.equal(sources.aihubmix.name, 'AiHubMix')
+    assert.ok(Array.isArray(sources.aihubmix.models))
+    // Models are fetched dynamically from API, so source models may be empty
+  })
+
   it('has expected provider structure', () => {
     for (const [providerKey, provider] of Object.entries(sources)) {
       assert.equal(typeof providerKey, 'string')
