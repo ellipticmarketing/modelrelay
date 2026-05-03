@@ -13,9 +13,7 @@ ghcr.io/Rahulsharma0810/modelrelay:latest
 | PR | Title | Status |
 |----|-------|--------|
 | #50 | Add AiHubMix as a new supported provider | Merged |
-| #51 | Add image input (vision) support to chat completions routing | Open |
 | #48 | Support multiple OpenAI-compatible upstream endpoints | Open |
-| #47 | Prompt Caching + Cache API | Open |
 
 ## Building
 
@@ -55,7 +53,7 @@ The `.github/workflows/docker-build.yml` workflow:
 ### Manual Trigger
 
 ```bash
-gh workflow run docker-build.yml -f pr_list=50,51,48,47
+gh workflow run docker-build.yml -f pr_list=50,48
 ```
 
 ## Updating
