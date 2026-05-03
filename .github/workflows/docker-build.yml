@@ -1,0 +1,99 @@
+name: Build Custom Docker Image
+
+on:
+  schedule:
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      pr_list:
+        description: 'Comma-separated PR numbers to cherry-pick (e.g., 50,48)'
+        required: false
+        default: '50,48'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Fetch upstream and prepare base
+        run: |
+          git remote add upstream https://github.com/ellipticmarketing/modelrelay.git
+          git fetch --depth=1 upstream master
+          git checkout -b base upstream/master
+
+      - name: Cherry-pick unmerged PRs
+        env:
+          PR_LIST: ${{ inputs.pr_list || '50,48' }}
+        run: |
+          echo "Cherry-picking PRs: $PR_LIST"
+          for pr in $(echo "$PR_LIST" | tr ',' ' '); do
+            echo "Processing PR #$pr"
+            commits=$(gh pr view "$pr" --json commits --jq '.commits | length')
+
+            if [ "$commits" = "1" ]; then
+              # Single commit PR - cherry-pick the commit directly
+              commit=$(gh pr view "$pr" --json commits --jq '.commits[0].oid')
+              echo "Cherry-picking commit: $commit"
+              git cherry-pick "$commit" || {
+                echo "Cherry-pick failed, checking for conflicts..."
+                git cherry-pick --abort 2>/dev/null || true
+              }
+            else
+              # Multi-commit PR - use the head commit
+              head_ref=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
+              git fetch origin "refs/heads/$head_ref"
+              git cherry-pick "origin/$head_ref" || {
+                echo "Cherry-pick failed, checking for conflicts..."
+                git cherry-pick --abort 2>/dev/null || true
+              }
+            fi
+          done
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest
+
+      - name: Build and push with Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_VERSION=latest
+
+      - name: Create version tag
+        run: |
+          VERSION=$(git -C . rev-parse --short HEAD)
+          docker tag ${{ env.REGISTRY }}/${{ github.repository }}:sha-$VERSION \
+            ${{ env.REGISTRY }}/${{ github.repository }}:v${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}:v${VERSION}
