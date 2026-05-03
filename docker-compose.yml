@@ -1,14 +1,21 @@
 services:
   modelrelay:
     build: .
-    container_name: modelrelay
-    restart: unless-stopped
+    image: ghcr.io/$GITHUB_REPOSITORY:latest
     ports:
-      - "7352:7352"
-    volumes:
-      - modelrelay_config:/app/config
+      - "3000:3000"
     environment:
       - NODE_ENV=production
-      - HOME=/app/config
-volumes:
-  modelrelay_config:
+      # Add your API keys here or use config file
+      - AIHUBMIX_API_KEY=your-key-here
+      - GROQ_API_KEY=your-key-here
+      - CEREBRAS_API_KEY=your-key-here
+    volumes:
+      - ./config.json:/home/node/.modelrelay.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
