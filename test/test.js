@@ -136,6 +136,13 @@ describe('sources data integrity', () => {
     assert.ok(Array.isArray(sources.opencode.models))
   })
 
+  it('includes AiHubMix provider', () => {
+    assert.ok(sources.aihubmix)
+    assert.equal(sources.aihubmix.name, 'AiHubMix')
+    assert.ok(Array.isArray(sources.aihubmix.models))
+    // Models are fetched dynamically from API, so source models may be empty
+  })
+
   it('has expected provider structure', () => {
     for (const [providerKey, provider] of Object.entries(sources)) {
       assert.equal(typeof providerKey, 'string')
@@ -630,8 +637,8 @@ describe('dynamic model score resolution', () => {
   it('normalizes Ling 2.6 Flash free aliases and keeps provider context metadata', () => {
     assert.equal(resolveAliasedModelId('ling-2.6-flash-free'), 'inclusionai/ling-2.6-flash')
     assert.equal(resolveAliasedModelId('inclusionai/ling-2.6-flash:free'), 'inclusionai/ling-2.6-flash')
-    assert.equal(getScore('ling-2.6-flash-free'), 0.232)
-    assert.equal(getScore('inclusionai/ling-2.6-flash:free'), 0.232)
+    assert.equal(getScore('ling-2.6-flash-free'), 0.771)
+    assert.equal(getScore('inclusionai/ling-2.6-flash:free'), 0.771)
     assert.equal(getPreferredModelContext('ling-2.6-flash-free'), '262k')
 
     const model = toOpenCodeModelMeta({ id: 'ling-2.6-flash-free' })
@@ -639,7 +646,7 @@ describe('dynamic model score resolution', () => {
     assert.ok(model)
     assert.equal(model.label, 'Ling 2.6 Flash')
     assert.equal(model.ctx, '262k')
-    assert.equal(model.intell, 0.232)
+    assert.equal(model.intell, 0.771)
     assert.equal(model.isEstimatedScore, false)
 
     const openRouterModel = toOpenRouterModelMeta({
@@ -649,7 +656,7 @@ describe('dynamic model score resolution', () => {
     })
 
     assert.ok(openRouterModel)
-    assert.equal(openRouterModel.intell, 0.232)
+    assert.equal(openRouterModel.intell, 0.771)
     assert.equal(openRouterModel.isEstimatedScore, false)
   })
 

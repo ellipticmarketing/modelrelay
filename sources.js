@@ -317,6 +317,11 @@ export const sources = {
       ["gemma-3-12b-it", "Gemma 3 12B", "128k"],
       ["gemma-3-4b-it", "Gemma 3 4B", "128k"]
     ]
+  },
+  "aihubmix": {
+    "name": "AiHubMix",
+    "url": "https://aihubmix.com/v1/chat/completions",
+    "models": []
   }
 }
 
