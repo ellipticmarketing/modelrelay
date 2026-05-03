@@ -27,6 +27,7 @@ import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autos
 import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
 import { buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestHeaders, extractOllamaModelRecords, getAccountStatus, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, providerWantsBearerAuth, shouldRetryOptionalProviderWithBearer, toOllamaModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta } from '../lib/server.js'
+import { extractOllamaVisionFlag, extractOpenRouterVisionFlag, isVisionModelByName, messagesContainImageContent, redactImageContentInMessages } from '../lib/vision.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -1511,6 +1512,113 @@ describe('multi-account round-robin', () => {
       assert.equal(entry.currentIdx, 1)
       assert.equal(entry.accounts.get(0).requests, 1)
       assert.equal(entry.accounts.get(1).requests, 0)
+    })
+  })
+})
+
+describe('vision capability detection', () => {
+  describe('isVisionModelByName', () => {
+    it('matches common vision suffixes', () => {
+      assert.equal(isVisionModelByName('qwen/qwen3-vl-235b-a22b'), true)
+      assert.equal(isVisionModelByName('xiaomi/mimo-v2-omni'), true)
+      assert.equal(isVisionModelByName('nvidia/nemotron-nano-12b-v2-vl'), true)
+      assert.equal(isVisionModelByName('some-vision-model'), true)
+    })
+
+    it('does not match unrelated names', () => {
+      assert.equal(isVisionModelByName('moonshotai/kimi-k2.5'), false)
+      assert.equal(isVisionModelByName('deepseek-ai/deepseek-v3.2'), false)
+      assert.equal(isVisionModelByName('llama-3.3-70b-versatile'), false)
+      assert.equal(isVisionModelByName(''), false)
+      assert.equal(isVisionModelByName(null), false)
+    })
+  })
+
+  describe('extractOpenRouterVisionFlag', () => {
+    it('reads architecture.input_modalities', () => {
+      assert.equal(
+        extractOpenRouterVisionFlag({ architecture: { input_modalities: ['text', 'image'] } }),
+        true
+      )
+      assert.equal(
+        extractOpenRouterVisionFlag({ architecture: { input_modalities: ['text'] } }),
+        false
+      )
+    })
+
+    it('falls back to modality string', () => {
+      assert.equal(extractOpenRouterVisionFlag({ architecture: { modality: 'text+image->text' } }), true)
+      assert.equal(extractOpenRouterVisionFlag({ modality: 'text->text' }), false)
+    })
+
+    it('returns null when no modality info is present', () => {
+      assert.equal(extractOpenRouterVisionFlag({}), null)
+      assert.equal(extractOpenRouterVisionFlag(null), null)
+    })
+  })
+
+  describe('extractOllamaVisionFlag', () => {
+    it('reads capabilities array', () => {
+      assert.equal(extractOllamaVisionFlag({ capabilities: ['vision', 'tools'] }), true)
+      assert.equal(extractOllamaVisionFlag({ capabilities: ['tools'] }), false)
+    })
+
+    it('returns null when capabilities are missing', () => {
+      assert.equal(extractOllamaVisionFlag({}), null)
+      assert.equal(extractOllamaVisionFlag(null), null)
+    })
+  })
+
+  describe('messagesContainImageContent', () => {
+    it('detects image_url parts', () => {
+      const messages = [
+        { role: 'user', content: [
+          { type: 'text', text: 'What is this?' },
+          { type: 'image_url', image_url: { url: 'data:image/png;base64,AAAA' } },
+        ] },
+      ]
+      assert.equal(messagesContainImageContent(messages), true)
+    })
+
+    it('detects input_image parts', () => {
+      assert.equal(messagesContainImageContent([
+        { role: 'user', content: [{ type: 'input_image', image: { url: 'x' } }] },
+      ]), true)
+    })
+
+    it('returns false for plain text', () => {
+      assert.equal(messagesContainImageContent([
+        { role: 'user', content: 'hello' },
+      ]), false)
+      assert.equal(messagesContainImageContent([
+        { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+      ]), false)
+    })
+
+    it('handles bad input gracefully', () => {
+      assert.equal(messagesContainImageContent(null), false)
+      assert.equal(messagesContainImageContent('not-an-array'), false)
+    })
+  })
+
+  describe('redactImageContentInMessages', () => {
+    it('replaces image parts with placeholders', () => {
+      const messages = [
+        { role: 'user', content: [
+          { type: 'text', text: 'caption please' },
+          { type: 'image_url', image_url: { url: 'data:image/png;base64,VERYLONG' } },
+        ] },
+      ]
+      const redacted = redactImageContentInMessages(messages)
+      assert.equal(redacted[0].content[0].text, 'caption please')
+      assert.equal(redacted[0].content[1].image_url.url, '[image redacted]')
+      // Original is untouched
+      assert.equal(messages[0].content[1].image_url.url, 'data:image/png;base64,VERYLONG')
+    })
+
+    it('leaves text-only messages unchanged', () => {
+      const messages = [{ role: 'user', content: 'hi' }]
+      assert.equal(redactImageContentInMessages(messages)[0], messages[0])
     })
   })
 })
