@@ -106,7 +106,9 @@ jobs:
 
       - name: Create version tag
         run: |
+          # Convert repo name to lowercase for ghcr.io
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_REPO="${{ env.REGISTRY }}/${REPO_LOWER}"
           VERSION=$(git -C . rev-parse --short HEAD)
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:sha-$VERSION \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:v${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:v${VERSION}
+          docker tag "${IMAGE_REPO}:sha-${VERSION}" "${IMAGE_REPO}:v${VERSION}"
+          docker push "${IMAGE_REPO}:v${VERSION}"
