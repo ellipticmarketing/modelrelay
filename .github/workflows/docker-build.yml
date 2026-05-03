@@ -43,28 +43,40 @@ jobs:
       - name: Cherry-pick unmerged PRs
         env:
           PR_LIST: ${{ inputs.pr_list || '50,48' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "Cherry-picking PRs: $PR_LIST"
           for pr in $(echo "$PR_LIST" | tr ',' ' '); do
             echo "Processing PR #$pr"
+            
+            # Check PR status
+            pr_state=$(gh pr view "$pr" --json state --jq '.state')
+            if [ "$pr_state" = "MERGED" ]; then
+              echo "PR #$pr is already merged, skipping..."
+              continue
+            fi
+            
             commits=$(gh pr view "$pr" --json commits --jq '.commits | length')
+            head_ref=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
 
             if [ "$commits" = "1" ]; then
-              # Single commit PR - cherry-pick the commit directly
               commit=$(gh pr view "$pr" --json commits --jq '.commits[0].oid')
               echo "Cherry-picking commit: $commit"
-              git cherry-pick "$commit" || {
-                echo "Cherry-pick failed, checking for conflicts..."
+              if ! git cherry-pick "$commit" 2>/dev/null; then
+                echo "Cherry-pick failed, aborting..."
                 git cherry-pick --abort 2>/dev/null || true
-              }
+              fi
             else
-              # Multi-commit PR - use the head commit
-              head_ref=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
-              git fetch origin "refs/heads/$head_ref"
-              git cherry-pick "origin/$head_ref" || {
-                echo "Cherry-pick failed, checking for conflicts..."
-                git cherry-pick --abort 2>/dev/null || true
+              echo "Fetching branch: $head_ref"
+              git fetch upstream "refs/heads/$head_ref" 2>/dev/null || \
+              git fetch origin "refs/heads/$head_ref" 2>/dev/null || {
+                echo "Branch $head_ref not found, skipping..."
+                continue
               }
+              if ! git cherry-pick "origin/$head_ref" 2>/dev/null; then
+                echo "Cherry-pick failed, aborting..."
+                git cherry-pick --abort 2>/dev/null || true
+              fi
             fi
           done
 
