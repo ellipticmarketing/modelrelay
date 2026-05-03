@@ -22,6 +22,9 @@ jobs:
       contents: read
       packages: write
 
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Checkout fork
         uses: actions/checkout@v4
