@@ -49,7 +49,7 @@
   ],
   "scripts": {
     "start": "node bin/modelrelay.js",
-    "test": "node --test test/test.js"
+    "test": "node --test test/test.js test/anthropic-adapter.test.js test/models-endpoint.test.js"
   },
   "dependencies": {
     "chalk": "^5.4.1",

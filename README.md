@@ -134,6 +134,92 @@ If you want manual setup, merge this into `~/.openclaw/openclaw.json`:
 }
 ```
 
+## Claude Code / Anthropic Messages API Integration
+
+modelrelay now supports **Anthropic's Messages API format** directly via the same base URL. This means [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview) and the [Claude Code VS Code extension](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) can use modelrelay as a drop-in proxy:
+
+```
+Base URL:    http://localhost:7352/v1
+API Key:     any string (e.g. "anthropic-key")
+Models:      claude-sonnet-4-5, claude-haiku-4-5, claude-opus-4-5
+```
+
+No separate proxy process needed — the Anthropic format conversion is built directly into the modelrelay server.
+
+### How it works
+
+modelrelay receives Anthropic-format requests at `POST /v1/messages`, converts them to OpenAI format, routes through the existing provider selection, then converts responses back to Anthropic format. Streaming emits the full Anthropic SSE event sequence:
+
+```
+message_start → content_block_start → content_block_delta → content_block_stop → message_delta → message_stop
+```
+
+Tool calls, reasoning content (`thinking_delta`), and plain text content are all supported.
+
+### Claude Code CLI Setup
+
+Set these setting in your $HOME/.claude/settings.json file:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:7352",
+    "ANTHROPIC_API_KEY": "sk-whatever",
+    "ANTHROPIC_MODEL": "claude-sonnet-4-5",
+  }
+}
+```
+Note: even though there is no API key needed. You need to start with `sk-`
+
+### Claude Code VS Code Extension Setup
+
+Add these settings to your VS Code `/path-to/vscode-or-code-server/User/settings.json` or global settings:
+
+```json
+{
+  "claudeCode.disableLoginPrompt": true,
+  "claudeCode.environmentVariables": [
+    { "name": "ANTHROPIC_BASE_URL", "value": "http://localhost:7352" },
+    { "name": "ANTHROPIC_API_KEY",  "value": "sk-whatever" },
+    { "name": "ANTHROPIC_MODEL",   "value": "claude-sonnet-4-5" }
+  ]
+}
+```
+
+> **Note:** The `environmentVariables` setting uses `"name"` not `"key"` for each entry object.
+
+### Available Anthropic Models
+
+| Model ID | Maps To |
+|----------|---------|
+| `claude-sonnet-4-5` | `auto-fastest` (best overall model) |
+| `claude-haiku-4-5`  | `auto-fastest` |
+| `claude-opus-4-5`   | `auto-fastest` |
+
+Override the mapping via the `ANTHROPIC_MODEL_MAP` environment variable:
+
+```bash
+export ANTHROPIC_MODEL_MAP="claude-sonnet-4-5=kimi-k2.5,claude-haiku-4-5=gemini-3-flash-preview"
+```
+
+### Testing the endpoint
+
+```bash
+# Non-streaming
+curl -X POST http://localhost:7352/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: any-key" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":100,"messages":[{"role":"user","content":"Hello"}]}'
+
+# Streaming
+curl -N -X POST http://localhost:7352/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: any-key" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":100,"stream":true,"messages":[{"role":"user","content":"Hello"}]}'
+```
+
 ## CLI
 
 ```bash
@@ -183,14 +269,13 @@ modelrelay config export | modelrelay config import
 
 ### `/v1/models`
 
-`GET /v1/models` returns the models exposed by the router.
+`GET /v1/models` returns the models exposed by the router. The endpoint uses **header-based detection** to serve the correct format:
 
+**OpenAI clients** (no `anthropic-version` header) receive an OpenAI-format model list:
 - Model IDs are grouped slugs such as `minimax-m2.5`, `kimi-k2.5`, and `glm4.7`
 - Each grouped ID can represent the same model across multiple providers
 - When you select one of these IDs in `/v1/chat/completions`, modelrelay routes the request to the provider with the best current QoS for that model group
 - `auto-fastest` is also exposed and routes to the best model overall
-
-Example:
 
 ```json
 {
@@ -200,6 +285,18 @@ Example:
     { "id": "minimax-m2.5", "object": "model", "owned_by": "relay" },
     { "id": "kimi-k2.5", "object": "model", "owned_by": "relay" },
     { "id": "glm4.7", "object": "model", "owned_by": "relay" }
+  ]
+}
+```
+
+**Anthropic clients** (with `anthropic-version` header, e.g. `anthropic-version: 2023-06-01`) receive an Anthropic-format model list:
+
+```json
+{
+  "data": [
+    { "type": "model", "id": "claude-sonnet-4-5" },
+    { "type": "model", "id": "claude-haiku-4-5" },
+    { "type": "model", "id": "claude-opus-4-5" }
   ]
 }
 ```
