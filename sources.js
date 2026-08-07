@@ -293,7 +293,16 @@ export const sources = {
     "contextUrl": "https://api.cerebras.ai/public/v1/models?format=openrouter",
     "discoverable": true,
     "models": [
-      ["zai-glm-4.7", "GLM 4.7", "128k"],
+      // Cerebras' own /v1/models?format=openrouter reports context_length: 131072 for this
+      // model, and their docs claim 64k on the free tier -- but the live account this project
+      // actually uses (likely on a more restrictive "Free Trial" tier, not full "Free") gets
+      // hard-rejected by the real API at 8192 tokens: "Please reduce the length of the messages
+      // or completion. Current length is 23592 while limit is 8192" (confirmed live 2026-08-07,
+      // this is what a real openclaw-sandbox request hit via auto-fastest+min_ctx:32000 -- the
+      // min_ctx filter can only work if this catalog value reflects what actually gets accepted,
+      // not the model's advertised maximum). If the account tier ever changes, re-verify before
+      // raising this.
+      ["zai-glm-4.7", "GLM 4.7", "8192"],
       ["llama3.1-8b", "Llama 3.1 8B", "128k"],
       ["qwen-3-235b-a22b-instruct-2507", "Qwen3 235B", "128k"],
       ["gpt-oss-120b", "GPT OSS 120B", "128k"]
