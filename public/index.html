@@ -1584,6 +1584,30 @@
       background: var(--surface-alt);
       color: var(--text);
     }
+
+    .copy-log-btn {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .copy-log-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .copy-log-btn.copied {
+      background: var(--status-success-bg);
+      border-color: var(--status-success-border);
+      color: var(--status-success-text);
+    }
+
     .update-badge {
       display: inline-flex;
       align-items: center;
@@ -2203,6 +2227,8 @@
     let metaLoaded = false;
     let logsViewMode = 'history';
     let logsAutoRefreshPaused = false;
+    let logsDataMap = {};
+    let historyItemsArr = [];
     const PROVIDER_ERROR_MAX_AGE_MS = 120 * 60_000;
     let filterRules = { minSweScore: null, excludedProviders: [] };
     let providerRefreshInFlight = new Set();
@@ -5096,6 +5122,7 @@
           const isBanned = logModelStatus === 'banned';
           // Use a stable unique id for toggling
           const cardId = 'log-' + l.timestamp.replace(/[^a-z0-9]/gi, '');
+          logsDataMap[cardId] = l;
           const isExpanded = expandedCards.has(cardId) ? ' expanded' : '';
           return `
             <div class="log-card${isExpanded}" id="${cardId}">
@@ -5119,6 +5146,7 @@
                     </div>
                   </div>
                 </div>
+                <button class="copy-log-btn" onclick="event.stopPropagation(); copyLogToClipboard('${cardId}')">📋 Copy</button>
               </div>
               <div class="log-card-body">
                 ${msgHtml}
@@ -5287,7 +5315,8 @@
         return;
       }
 
-      container.innerHTML = deduped.map(item => {
+      historyItemsArr = deduped;
+      container.innerHTML = deduped.map((item, idx) => {
         const role = item.role || 'unknown';
         const date = new Date(item.timestamp);
         const timeStr = Number.isNaN(date.getTime())
@@ -5301,8 +5330,9 @@
 
         return `
           <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
               <span style="font-size: 0.68rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:${badgeColor};">${escapeHtml(role)}</span>
+              <button class="copy-log-btn history-copy-btn" data-idx="${idx}" onclick="copyHistoryItem(${idx})">📋 Copy</button>
             </div>
             <div style="font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; color: var(--text); background: var(--chat-bg); padding: 9px; border-radius: 7px; border: 1px solid var(--border); max-height: 240px; overflow-y:auto;">${content}</div>
             <div style="margin-top:8px; font-size: 0.74rem; color: var(--text-muted); display:flex; gap:8px; flex-wrap:wrap;">
@@ -5320,6 +5350,158 @@
 
     function toggleLogCard(id) {
       document.getElementById(id)?.classList.toggle('expanded');
+    }
+
+    function applyCopyFeedback(btn) {
+      if (!btn) return;
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    function copyToClipboard(text, btn) {
+      if (!text) {
+        console.warn('Clipboard: No text provided to copy');
+        return;
+      }
+      
+      console.log('Clipboard: Copying text to clipboard (length: ' + text.length + ')');
+      const doFeedback = () => applyCopyFeedback(btn);
+
+      // Try modern API if in secure context
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            console.log('Clipboard: Modern API copy success');
+            doFeedback();
+          })
+          .catch(err => {
+            console.warn('Clipboard: Modern API failed, trying fallback', err);
+            fallbackCopyToClipboard(text, doFeedback);
+          });
+        return;
+      }
+
+      // Fallback for non-secure contexts (HTTP on LAN IP)
+      fallbackCopyToClipboard(text, doFeedback);
+    }
+
+    function fallbackCopyToClipboard(text, callback) {
+      console.log('Clipboard: Using fallback execCommand method');
+      let textArea = null;
+      try {
+        textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        // Use styles that keep it in the document but invisible
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        textArea.style.width = "2em";
+        textArea.style.height = "2em";
+        textArea.style.padding = "0";
+        textArea.style.border = "none";
+        textArea.style.outline = "none";
+        textArea.style.boxShadow = "none";
+        textArea.style.background = "transparent";
+        
+        document.body.appendChild(textArea);
+        
+        // Select the text
+        textArea.focus();
+        textArea.select();
+        
+        // Selection check for iOS/Safari
+        if (textArea.selectionStart !== 0 || textArea.selectionEnd !== text.length) {
+          textArea.setSelectionRange(0, 999999);
+        }
+        
+        const successful = document.execCommand('copy');
+        if (successful) {
+          console.log('Clipboard: Fallback copy successful');
+          if (callback) callback();
+        } else {
+          console.error('Clipboard: Fallback copy returned false (command failed)');
+          // Last resort: log to console so user can at least copy from there
+          console.info('CLIPBOARD CONTENT BELOW:\n' + text);
+        }
+      } catch (err) {
+        console.error('Clipboard: Fallback copy threw error', err);
+      } finally {
+        if (textArea && textArea.parentNode) {
+          document.body.removeChild(textArea);
+        }
+      }
+    }
+
+    function copyLogToClipboard(cardId) {
+      try {
+        const l = logsDataMap[cardId];
+        if (!l) {
+          console.warn('Clipboard: No log data found for ID:', cardId);
+          return;
+        }
+        const date = new Date(l.timestamp);
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const statusText = l.status === '200' ? '200 OK' : (l.status || 'unknown');
+        const modelLine = l.resolvedModel
+          ? `[MODEL]: ${l.model} (resolved: ${l.resolvedModel})`
+          : `[MODEL]: ${l.model}`;
+        const statusLine = l.duration != null
+          ? `[STATUS]: ${statusText} | ${l.duration}ms`
+          : `[STATUS]: ${statusText}`;
+        const lines = [
+          `[TIME]: ${timeStr}`,
+          modelLine,
+          statusLine,
+        ];
+        
+        const messages = Array.isArray(l.messages) ? l.messages : (typeof l.messages === 'string' ? [{ role: 'raw', content: l.messages }] : []);
+        for (const m of messages) {
+          const role = (m.role || 'unknown').toUpperCase();
+          lines.push(`[${role}]: ${formatMessageContent(m.content)}`);
+        }
+        if (l.response) {
+          lines.push(`[ASSISTANT]: ${l.response}`);
+        }
+        
+        const btn = document.querySelector(`#${cardId} .copy-log-btn`);
+        copyToClipboard(lines.join('\n'), btn);
+      } catch (err) {
+        console.error('Clipboard: Error generating log text:', err);
+      }
+    }
+
+    function copyHistoryItem(idx) {
+      try {
+        const item = historyItemsArr[idx];
+        if (!item) {
+          console.warn('Clipboard: No history item found for index:', idx);
+          return;
+        }
+        const date = new Date(item.timestamp);
+        const timeStr = Number.isNaN(date.getTime())
+          ? 'Unknown time'
+          : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const modelLine = item.resolvedModel
+          ? `[MODEL]: ${item.model || '(unknown model)'} (resolved: ${item.resolvedModel})`
+          : `[MODEL]: ${item.model || '(unknown model)'}`;
+        const role = (item.role || 'unknown').toUpperCase();
+        const text = [
+          `[TIME]: ${timeStr}`,
+          modelLine,
+          `[${role}]: ${formatMessageContent(item.content)}`,
+        ].join('\n');
+        
+        const btn = document.querySelector(`.history-copy-btn[data-idx="${idx}"]`);
+        copyToClipboard(text, btn);
+      } catch (err) {
+        console.error('Clipboard: Error generating history text:', err);
+      }
     }
 
     function openDrawer(m) {
