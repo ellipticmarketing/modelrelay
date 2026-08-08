@@ -15,6 +15,9 @@ import {
   findBestModel,
   rankModelsForRouting,
   getRoutingModelKey,
+  latencyScore,
+  computeQoS,
+  DEFAULT_QOS_LATENCY_TARGET_MS,
   buildModelGroups,
   filterModelsByRequested,
   isRetryableProxyStatus,
@@ -1691,6 +1694,69 @@ describe('rankModelsForRouting', () => {
 
     const ranked = rankModelsForRouting(results, ['a'])
     assert.deepEqual(ranked.map(r => r.modelId), ['d'])
+  })
+})
+
+describe('latencyScore', () => {
+  it('returns 1 at zero latency and 0.5 exactly at the target', () => {
+    assert.equal(latencyScore(0, 1000), 1)
+    assert.equal(latencyScore(1000, 1000), 0.5)
+  })
+
+  it('decays continuously and never saturates to zero', () => {
+    const at1s = latencyScore(1_000, 1000)
+    const at10s = latencyScore(10_000, 1000)
+    const at250s = latencyScore(250_000, 1000)
+    assert.ok(at1s > at10s)
+    assert.ok(at10s > at250s)
+    assert.ok(at250s > 0)
+  })
+
+  it('treats missing ping data (Infinity/null avg) as the neutral midpoint', () => {
+    assert.equal(latencyScore(Infinity, 1000), 0.5)
+    assert.equal(latencyScore(null, 1000), 0.5)
+  })
+
+  it('defaults to DEFAULT_QOS_LATENCY_TARGET_MS when no target is given', () => {
+    assert.equal(latencyScore(DEFAULT_QOS_LATENCY_TARGET_MS), 0.5)
+  })
+})
+
+describe('QoS latency weighting (regression: nvidia/z-ai/glm-5.2 sat at a 200-290s avg for ~24h while still ranking near the top by quality score alone)', () => {
+  it('a catastrophically slow but high-quality model no longer beats a fast, lower-quality one', () => {
+    const catastrophicallySlow = mockResult({
+      label: 'HighQualitySlow',
+      intell: 0.9,
+      pings: [{ ms: 250_000, code: '200' }, { ms: 240_000, code: '200' }],
+    })
+    const fastButLowerQuality = mockResult({
+      label: 'FastLowerQuality',
+      intell: 0.3,
+      pings: [{ ms: 1_500, code: '200' }, { ms: 1_600, code: '200' }],
+    })
+
+    const ranked = rankModelsForRouting([catastrophicallySlow, fastButLowerQuality])
+    assert.equal(ranked[0].label, 'FastLowerQuality')
+  })
+
+  it('still prefers the higher-quality model when both are reasonably fast', () => {
+    const higherQuality = mockResult({ label: 'HigherQuality', intell: 0.9, pings: [{ ms: 1_200, code: '200' }] })
+    const lowerQuality = mockResult({ label: 'LowerQuality', intell: 0.3, pings: [{ ms: 900, code: '200' }] })
+
+    const ranked = rankModelsForRouting([higherQuality, lowerQuality])
+    assert.equal(ranked[0].label, 'HigherQuality')
+  })
+
+  it('a stuck-slow model still scores above zero -- a last resort, not fully excluded', () => {
+    const stuckSlow = mockResult({ label: 'StuckSlow', intell: 0.9, pings: [{ ms: 291_194, code: '200' }] })
+    assert.ok(computeQoS(stuckSlow) > 0)
+  })
+
+  it('is tunable via latencyTargetMs for deployments with different latency expectations', () => {
+    const model = mockResult({ intell: 0.5, pings: [{ ms: 5_000, code: '200' }] })
+    const strict = computeQoS(model, 500)
+    const lenient = computeQoS(model, 10_000)
+    assert.ok(lenient > strict)
   })
 })
 

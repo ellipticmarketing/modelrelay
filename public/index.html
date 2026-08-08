@@ -2204,7 +2204,7 @@
     let logsViewMode = 'history';
     let logsAutoRefreshPaused = false;
     const PROVIDER_ERROR_MAX_AGE_MS = 120 * 60_000;
-    let filterRules = { minSweScore: null, excludedProviders: [] };
+    let filterRules = { minSweScore: null, excludedProviders: [], qosLatencyTargetMs: null };
     let providerRefreshInFlight = new Set();
     let kiroDeviceAuthState = null;
     let kiroDevicePollTimer = null;
@@ -3453,11 +3453,14 @@
       // Store globally for immediate table filtering
       filterRules = {
         minSweScore: filterRulesFromServer.minSweScore,
-        excludedProviders: filterRulesFromServer.excludedProviders || []
+        excludedProviders: filterRulesFromServer.excludedProviders || [],
+        qosLatencyTargetMs: filterRulesFromServer.qosLatencyTargetMs
       };
 
       const minSweScore = filterRules.minSweScore;
       const excludedProviders = filterRules.excludedProviders || [];
+      // Falls back to the same default as lib/utils.js's DEFAULT_QOS_LATENCY_TARGET_MS.
+      const qosLatencyTargetMs = filterRules.qosLatencyTargetMs ?? 3000;
 
       const providerCheckboxes = providers.map(p => `
         <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--input-bg-alt); border-radius: 8px; cursor: pointer; font-size: 0.875rem;">
@@ -3488,6 +3491,14 @@
                 ${providerCheckboxes}
               </div>
               <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 6px;">All models from these providers will be excluded from pinging and routing.</p>
+            </div>
+
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.875rem;">
+                QoS Latency Target (ms)
+              </label>
+              <input type="number" id="qos-latency-target-ms" min="1" step="100" value="${qosLatencyTargetMs}" style="width: 100px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem;">
+              <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 6px;">A model responding at this speed keeps its full quality-driven ranking; slower models are discounted continuously (never fully to zero) the further past this target they average. Lower this to weight speed more heavily; raise it to let quality dominate over a wider latency range.</p>
             </div>
 
             <div>
@@ -3621,11 +3632,23 @@
       const checkboxes = document.querySelectorAll('.excluded-provider-checkbox:checked');
       const excludedProviders = Array.from(checkboxes).map(cb => cb.value);
 
+      const qosLatencyInput = document.getElementById('qos-latency-target-ms');
+      let qosLatencyTargetMs = null;
+      if (qosLatencyInput) {
+        const qosLatencyValue = qosLatencyInput.value.trim();
+        if (qosLatencyValue !== '') {
+          const parsed = Number(qosLatencyValue);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            qosLatencyTargetMs = parsed;
+          }
+        }
+      }
+
       try {
         const res = await fetch('/api/filter-rules', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ minSweScore, excludedProviders })
+          body: JSON.stringify({ minSweScore, excludedProviders, qosLatencyTargetMs })
         });
         if (!res.ok) throw new Error('Failed to save filter rules');
         const data = await res.json();

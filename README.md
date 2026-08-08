@@ -228,6 +228,12 @@ Tag membership alone doesn't guarantee a model can fit your prompt — a tag can
 
 Modelrelay uses context data reported by the selected provider when it is available. Otherwise, it uses a provider-specific curated value from `sources.js`. It does not copy a context size between providers. It also keeps the context unknown when neither source has a value. For Ollama, the allocated or configured context is usable for this filter. The model maximum alone is not sufficient.
 
+### QoS: how speed and quality are weighed
+
+`auto-fastest`, grouped-ID, and `tag:<name>` routing all rank eligible candidates by a QoS score that blends a model's quality (its `intell` percentile among all known models) with its recently observed average latency. Latency is scored continuously and never fully bottoms out at zero — a model averaging 1.1s and one averaging 4 minutes are not treated as equivalent just because both are technically "up" and returning HTTP 200. A model whose average latency sits at the configured target keeps its full quality-driven score; the further past the target it drifts, the more that score is discounted, though it always remains a nonzero (last-resort) candidate rather than being excluded outright — exclusion is still a separate, explicit action (ban a model, or set a minimum coding score / excluded providers list).
+
+The target is `qosLatencyTargetMs`, configurable in the Web UI under **Settings → QoS Latency Target (ms)** (default: 3000ms). Lower it to weight speed more heavily against quality; raise it to let quality dominate over a wider range of observed latencies. It applies uniformly to `auto-fastest`, `tag:<name>`, grouped-ID, and pinned-model routing.
+
 ## Config
 
 - Router config file: `~/.modelrelay.json`
