@@ -1024,6 +1024,27 @@ describe('user-defined model tags', () => {
     )
   })
 
+  it('caps min_ctx matching at a live-observed rate-limit token quota, not just the advertised context window', () => {
+    const results = [
+      // Reports a huge window, but the account's real per-minute quota (captured live from
+      // provider rate-limit headers) is far below the requested floor -- must be excluded.
+      mockResult({ modelId: 'quota-capped', tags: ['general'], ctx: '131k', ctxSource: 'provider-reported', rateLimit: { limitTokens: 8000 } }),
+      // Quota is present but comfortably above the floor -- still eligible.
+      mockResult({ modelId: 'quota-ample', tags: ['general'], ctx: '131k', ctxSource: 'provider-reported', rateLimit: { limitTokens: 64000 } }),
+      // No rate-limit data captured yet -- falls back to the advertised window, unchanged.
+      mockResult({ modelId: 'no-quota-data', tags: ['general'], ctx: '131k', ctxSource: 'provider-reported' }),
+    ]
+
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+min_ctx:32000').map(m => m.modelId),
+      ['quota-ample', 'no-quota-data'],
+    )
+    assert.deepEqual(
+      filterModelsByRequested(results, 'auto-fastest+min_ctx:32000').map(m => m.modelId),
+      ['quota-ample', 'no-quota-data'],
+    )
+  })
+
   it('ignores unknown or malformed tag modifiers instead of rejecting the request', () => {
     const results = [mockResult({ modelId: 'one', tags: ['general'], ctx: '128k' })]
     assert.deepEqual(
