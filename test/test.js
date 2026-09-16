@@ -35,7 +35,7 @@ import { getConfiguredTagNames, getModelTagKey, getModelTags as getUserModelTags
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
 import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape, isOpenAICompatibleInstanceKey, getBaseProviderKey, getOpenAICompatibleInstanceId, buildOpenAICompatibleInstanceKey, listOpenAICompatibleEndpoints, upsertOpenAICompatibleEndpoint, removeOpenAICompatibleEndpoint } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
-import { buildKiroRequestPayload, buildKiroSocialLoginUrl, buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestBody, buildProviderRequestHeaders, exchangeKiroSocialAuthFlow, exchangeKiroSocialCode, extractKiroEmailFromAccessToken, extractOllamaModelRecords, extractOpenAICompatibleModelRecords, buildOpenAICompatibleModelsListUrl, getAccountStatus, getKiroRefreshToken, hasKiroAuthConfigured, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, parseKiroEventFrame, pollKiroBuilderIdToken, providerWantsBearerAuth, resolveKiroOAuthAccessToken, shouldRetryOptionalProviderWithBearer, startKiroBuilderIdDeviceAuth, startKiroSocialAuthFlow, toOllamaModelMeta, toOpenAICompatibleDiscoveredModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta, transformKiroResponse } from '../lib/server.js'
+import { captureProxyRateLimit, buildKiroRequestPayload, buildKiroSocialLoginUrl, buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestBody, buildProviderRequestHeaders, exchangeKiroSocialAuthFlow, exchangeKiroSocialCode, extractKiroEmailFromAccessToken, extractOllamaModelRecords, extractOpenAICompatibleModelRecords, buildOpenAICompatibleModelsListUrl, getAccountStatus, getKiroRefreshToken, hasKiroAuthConfigured, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, parseKiroEventFrame, pollKiroBuilderIdToken, providerWantsBearerAuth, resolveKiroOAuthAccessToken, shouldRetryOptionalProviderWithBearer, startKiroBuilderIdDeviceAuth, startKiroSocialAuthFlow, toOllamaModelMeta, toOpenAICompatibleDiscoveredModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta, transformKiroResponse } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -1043,6 +1043,50 @@ describe('user-defined model tags', () => {
       filterModelsByRequested(results, 'auto-fastest+min_ctx:32000').map(m => m.modelId),
       ['quota-ample', 'no-quota-data'],
     )
+  })
+
+  it('keeps proxy quotas on the responding model when filtering later requests', async () => {
+    const capped = mockResult({ providerKey: 'groq', modelId: 'quota-capped', tags: ['general'], ctx: '131k' })
+    const ample = mockResult({ providerKey: 'groq', modelId: 'quota-ample', tags: ['general'], ctx: '131k' })
+    const otherProvider = mockResult({ providerKey: 'other', modelId: 'quota-capped', tags: ['general'], ctx: '131k' })
+    const results = [capped, ample, otherProvider]
+    const response = (limit, status = 200) => new Response('{}', {
+      status, headers: { 'x-ratelimit-limit-tokens': String(limit) },
+    })
+    const assertEligible = () => {
+      for (const request of ['auto-fastest+min_ctx:32000', 'tag:general+min_ctx:32000']) {
+        assert.deepEqual(filterModelsByRequested(results, request), [ample, otherProvider])
+      }
+    }
+
+    await captureProxyRateLimit(results, ample, response(64000), 'test-key')
+    await captureProxyRateLimit(results, capped, response(8000, 429), 'test-key')
+    assert.equal(ample.rateLimit.limitTokens, 64000)
+    assert.equal(ample.rateLimit.wasRateLimited, false)
+    assert.equal(otherProvider.rateLimit, undefined)
+    assertEligible()
+
+    await captureProxyRateLimit(results, ample, response(64000), 'test-key')
+    assert.equal(capped.rateLimit.limitTokens, 8000)
+    assert.equal(capped.rateLimit.wasRateLimited, true)
+    assertEligible()
+  })
+
+  it('shares OpenRouter key data while preserving each model response quota', async () => {
+    const capped = mockResult({ providerKey: 'openrouter', modelId: 'quota-capped', rateLimit: { limitTokens: 8000 } })
+    const ample = mockResult({ providerKey: 'openrouter', modelId: 'quota-ample' })
+    const other = mockResult({ providerKey: 'groq' })
+    const results = [capped, ample, other]
+    await captureProxyRateLimit(results, ample, new Response('{}', {
+      headers: { 'x-ratelimit-limit-tokens': '64000' },
+    }), 'test-key', async () => ({ creditLimit: 10, creditRemaining: 9 }))
+
+    assert.equal(capped.rateLimit.limitTokens, 8000)
+    assert.equal(ample.rateLimit.limitTokens, 64000)
+    assert.equal(capped.rateLimit.creditRemaining, 9)
+    assert.equal(ample.rateLimit.creditRemaining, 9)
+    assert.equal(other.rateLimit, undefined)
+    assert.deepEqual(filterModelsByRequested(results, 'auto-fastest+min_ctx:32000'), [ample, other])
   })
 
   it('ignores unknown or malformed tag modifiers instead of rejecting the request', () => {
