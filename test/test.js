@@ -20,6 +20,7 @@ import {
   DEFAULT_QOS_LATENCY_TARGET_MS,
   buildModelGroups,
   filterModelsByRequested,
+  isRateLimitShapedError,
   isRetryableProxyStatus,
   computeFailedRefreshRetryAt,
   parseContextSize,
@@ -1128,6 +1129,63 @@ describe('user-defined model tags', () => {
     )
   })
 
+  it('filters tag/auto-fastest requests by an exclude modifier', () => {
+    const results = [
+      mockResult({ modelId: 'qwen/qwen3.8-27b', providerKey: 'groq', tags: ['general'], ctx: '128k' }),
+      mockResult({ modelId: 'qwen/qwen3.6-27b', providerKey: 'groq', tags: ['general'], ctx: '128k' }),
+      mockResult({ modelId: 'llama-3.3-70b-versatile', providerKey: 'groq', tags: ['general'], ctx: '128k' }),
+    ]
+
+    // Bare modelId excludes across all providers.
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+exclude:qwen/qwen3.8-27b').map(m => m.modelId),
+      ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+    )
+    // Provider-qualified key excludes only that exact row.
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+exclude:groq/qwen/qwen3.8-27b').map(m => m.modelId),
+      ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+    )
+    // Multi-value via `|`.
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+exclude:qwen/qwen3.8-27b|qwen/qwen3.6-27b').map(m => m.modelId),
+      ['llama-3.3-70b-versatile'],
+    )
+    // Case-insensitive.
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+exclude:GROQ/QWEN/QWEN3.8-27B').map(m => m.modelId),
+      ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+    )
+    // Composes with min_ctx, order-independent.
+    const withCtx = [
+      mockResult({ modelId: 'small', providerKey: 'groq', tags: ['general'], ctx: '8k' }),
+      mockResult({ modelId: 'medium', providerKey: 'groq', tags: ['general'], ctx: '128k' }),
+      mockResult({ modelId: 'large', providerKey: 'groq', tags: ['general'], ctx: '128k' }),
+    ]
+    assert.deepEqual(
+      filterModelsByRequested(withCtx, 'tag:general+min_ctx:32000+exclude:medium').map(m => m.modelId),
+      ['large'],
+    )
+    assert.deepEqual(
+      filterModelsByRequested(withCtx, 'tag:general+exclude:medium+min_ctx:32000').map(m => m.modelId),
+      ['large'],
+    )
+    // Works for auto-fastest too, with no tag restriction.
+    assert.deepEqual(
+      filterModelsByRequested(results, 'auto-fastest+exclude:qwen/qwen3.8-27b').map(m => m.modelId),
+      ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+    )
+    // Empty or unmatched exclude values are silently ignored, not an error.
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+exclude:').map(m => m.modelId),
+      ['qwen/qwen3.8-27b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+    )
+    assert.deepEqual(
+      filterModelsByRequested(results, 'tag:general+exclude:nonexistent-id').map(m => m.modelId),
+      ['qwen/qwen3.8-27b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+    )
+  })
+
   it('normalizes persisted model tags safely', () => {
     const normalized = normalizeConfigShape({
       modelTags: {
@@ -1842,6 +1900,38 @@ describe('isRetryableProxyStatus', () => {
     assert.equal(isRetryableProxyStatus(400), false)
     assert.equal(isRetryableProxyStatus(404), false)
     assert.equal(isRetryableProxyStatus('not-a-status'), false)
+  })
+})
+
+describe('isRateLimitShapedError', () => {
+  it('recognizes a 400 quota/rate-limit style body (Groq TPM overage)', () => {
+    assert.equal(isRateLimitShapedError(400, 'Please reduce your message size ... tokens per minute (TPM): Limit 8000'), true)
+  })
+
+  it('recognizes other rate-limit/quota phrasing, case-insensitively', () => {
+    assert.equal(isRateLimitShapedError(400, 'RATE LIMIT exceeded for this account'), true)
+    assert.equal(isRateLimitShapedError(400, 'requests per minute quota exceeded'), true)
+    assert.equal(isRateLimitShapedError(403, 'You have exceeded your quota'), true)
+    assert.equal(isRateLimitShapedError(400, 'rpm limit hit'), true)
+  })
+
+  it('does not mask a genuinely malformed request as retryable', () => {
+    assert.equal(isRateLimitShapedError(400, 'Invalid request: "messages" field is required'), false)
+    assert.equal(isRateLimitShapedError(400, '{"error":"missing required parameter model"}'), false)
+  })
+
+  it('only applies to 400/403 -- other statuses are always false regardless of body', () => {
+    assert.equal(isRateLimitShapedError(200, 'tokens per minute'), false)
+    assert.equal(isRateLimitShapedError(404, 'rate limit'), false)
+    assert.equal(isRateLimitShapedError(500, 'quota exceeded'), false)
+    assert.equal(isRateLimitShapedError(429, 'tokens per minute'), false)
+  })
+
+  it('returns false for missing, empty, or non-string bodies', () => {
+    assert.equal(isRateLimitShapedError(400, null), false)
+    assert.equal(isRateLimitShapedError(400, undefined), false)
+    assert.equal(isRateLimitShapedError(400, ''), false)
+    assert.equal(isRateLimitShapedError(400, { message: 'tokens per minute' }), false)
   })
 })
 
